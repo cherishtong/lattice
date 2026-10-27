@@ -1,0 +1,12 @@
+/target
+/.tools
+/.content
+/dist
+**/dist
+**/.dioxus
+*.db
+*.db-wal
+*.db-shm
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+[package]
+name = "lattice-query"
+description = "In-memory source and symbol search for Lattice"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+lattice-content = { path = "../lattice-content" }
+lattice-parser = { path = "../lattice-parser" }
+postcard = { version = "1", features = ["use-std"] }
+serde = { version = "1", features = ["derive"] }
+
+[lints]
+workspace = true

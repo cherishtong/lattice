@@ -1,0 +1,10 @@
+[application]
+name = "lattice"
+default_platform = "desktop"
+
+[web.app]
+title = "Lattice — 离线源码学习平台"
+
+[web.resource]
+style = []
+script = []

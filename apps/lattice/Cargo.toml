@@ -1,0 +1,26 @@
+[package]
+name = "lattice"
+description = "Lattice 离线源码学习平台"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["desktop"]
+desktop = ["dioxus/desktop"]
+native = ["dep:dioxus-native", "dioxus/native"]
+web = ["dioxus/web"]
+
+[dependencies]
+dioxus = { version = "0.7.3" }
+dioxus-native = { version = "0.7.3", optional = true }
+lattice-content = { path = "../../crates/lattice-content" }
+lattice-parser = { path = "../../crates/lattice-parser" }
+lattice-query = { path = "../../crates/lattice-query" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+similar = { version = "3", default-features = false, features = ["text"] }
+tokio = { version = "1", features = ["rt", "time", "sync"] }
+
+[lints]
+workspace = true
