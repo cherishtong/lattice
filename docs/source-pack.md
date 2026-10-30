@@ -1,6 +1,6 @@
 # Source Pack
 
-Source Pack 是 Lattice 的不可变源码单元：固定实现、版本、源码范围和许可证。源码包不进入 Git，安装后只读。
+Source Pack 是 Lattice 的不可变源码单元：固定实现、版本、源码范围和许可证。源码包以 ZIP 归档放在仓库的 `source-packs/`，安装后只读。
 
 ## 内置内容
 
@@ -19,7 +19,26 @@ Source Pack 是 Lattice 的不可变源码单元：固定实现、版本、源�
 
 所有源码包必须在书库、侧栏、文件头、文件信息和状态栏显示版本。
 
-## 获取
+## 从仓库安装
+
+`source-packs/<pack>.zip` 是可直接解压的源码归档，内部保留 `<pack>/.lattice/pack.json`。归档不包含符号索引、文档缓存和损坏隔离目录。
+
+```powershell
+# 安装全部归档
+powershell -ExecutionPolicy Bypass -File scripts/install-source-packs.ps1
+
+# 只安装指定包
+powershell -ExecutionPolicy Bypass -File scripts/install-source-packs.ps1 -Pack cpython-3.13.2,rust-1.99.1
+
+# 覆盖已安装目录
+powershell -ExecutionPolicy Bypass -File scripts/install-source-packs.ps1 -Pack nginx-1.31.8 -Force
+```
+
+脚本把归档解压到 `.content/`；已存在同名目录时默认跳过。首次打开源码包时会重建符号索引和文档缓存。
+
+## 重新获取（可选）
+
+以下脚本用于重新获取上游源码、更新归档或复现固定版本：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/fetch-cpython-pack.ps1
@@ -69,6 +88,7 @@ Nginx、Spring Boot、Vue、React 使用固定 tag，不跟随分支头；下载
 - 索引包含文件、符号和类型关系。
 - 缓存缺失、版本变化或源码指纹变化时自动重建。
 - release 构建优先加载缓存，不重复解析全部源码。
+- `source-packs/` 归档不包含缓存；解压后首次打开会重建，之后打开走缓存。
 
 预构建：
 

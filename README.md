@@ -57,7 +57,21 @@ Lattice 只做：
 | Vue | 3.5.44 | 已接入，`packages/*/src` |
 | React | 19.3.1 | 已接入，核心包的 `src/` |
 
-源码包不进入 Git，放在 `.content/`。
+源码包以 ZIP 归档放在仓库的 `source-packs/`，解压后位于 `.content/`。归档不包含符号索引和文档缓存，首次打开时自动重建。
+
+克隆仓库后一键安装：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install-source-packs.ps1
+```
+
+只安装部分包：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install-source-packs.ps1 -Pack cpython-3.13.2,rust-1.99.1
+```
+
+已存在同名目录时默认跳过；需要覆盖时加 `-Force`。
 
 ## 构建
 
@@ -80,7 +94,9 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-## 获取源码包
+## 重新获取源码包
+
+仓库内的 `source-packs/` 已提供固定版本归档，日常使用不需要重新下载。以下脚本用于重新获取、更新或复现归档内容：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/fetch-cpython-pack.ps1
@@ -93,6 +109,12 @@ powershell -ExecutionPolicy Bypass -File scripts/fetch-nginx-pack.ps1
 powershell -ExecutionPolicy Bypass -File scripts/fetch-spring-boot-pack.ps1
 powershell -ExecutionPolicy Bypass -File scripts/fetch-vue-pack.ps1
 powershell -ExecutionPolicy Bypass -File scripts/fetch-react-pack.ps1
+```
+
+重新生成 `source-packs/` 归档：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/package-source-packs.ps1
 ```
 
 预构建索引和文档缓存：
