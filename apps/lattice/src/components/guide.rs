@@ -5,7 +5,7 @@ use dioxus::prelude::*;
 
 use crate::source::{CallNode, CallTree, SourceSession};
 
-use lattice_parser::ReferenceKind;
+use lattice_parser::{ReferenceKind, SymbolKind, TypeRelationKind};
 
 use super::icon::{Icon, IconButton, IconKind};
 
@@ -54,6 +54,34 @@ pub fn GuidePanel(source: SourceSession) -> Element {
             .find(|symbol| symbol.start_line == selection.start_line)
             .map(|symbol| symbol.name.clone())
     });
+    let selected_symbol = active_tab.and_then(|tab| {
+        let selection = tab.selection?;
+        tab.document
+            .as_ref()?
+            .symbols
+            .iter()
+            .find(|symbol| symbol.start_line == selection.start_line)
+    });
+    let type_relations = match (selected_name.as_deref(), selected_selection, active_tab) {
+        (Some(name), Some(selection), Some(tab)) => {
+            let index = source.index.read();
+            index.as_ref().map(|index| {
+                index.relations_for(
+                    name,
+                    &tab.path,
+                    selection.start_line,
+                    tab.document
+                        .as_ref()
+                        .map_or("C", |document| document.language),
+                )
+            })
+        }
+        _ => None,
+    };
+    let index_ready = source.index.read().is_some();
+    let selected_kind = selected_symbol.map(|symbol| symbol.kind);
+    let show_type_relations = selected_kind.is_some_and(is_type_symbol);
+    let type_relations = type_relations.unwrap_or_default();
     let references = source.references.read();
     let references_loading = *source.references_loading.read();
     let references_error = source.references_error.read().clone();
@@ -382,6 +410,110 @@ pub fn GuidePanel(source: SourceSession) -> Element {
                         if selected_name.is_none() {
                             div { class: "outline-empty", "先在符号大纲中选择一个符号，再查看调用链。" }
                         } else {
+                            if show_type_relations {
+                                div { class: "relation-section",
+                                    div { class: "relation-heading",
+                                        span { "继承 / 实现" }
+                                        span { class: "relation-count", "{type_relations.bases.len()}" }
+                                    }
+                                    if !index_ready {
+                                        div { class: "reference-loading",
+                                            span { class: "source-spinner" }
+                                            "正在建立符号索引，稍后显示跨文件关系。"
+                                        }
+                                    } else if type_relations.bases.is_empty() {
+                                        div { class: "outline-empty", "没有检测到直接基类、接口或 Trait。" }
+                                    } else {
+                                        div { class: "reference-list",
+                                            for (index, target) in type_relations.bases.iter().enumerate() {
+                                                {
+                                                    let resolved = target.path.clone().zip(target.line);
+                                                    rsx! {
+                                                        if let Some((path, line)) = resolved {
+                                                            button {
+                                                                r#type: "button",
+                                                                key: "base-{index}-{target.name}",
+                                                                class: "reference-row",
+                                                                onclick: move |_| source.open_at(path.clone(), line),
+                                                                span { class: "reference-line", "{line}" }
+                                                                span { class: "reference-copy",
+                                                                    span { class: "reference-preview", "{target.name}" }
+                                                                    span { class: "reference-path", "{path}" }
+                                                                }
+                                                                span { class: "reference-kind", "{relation_kind_label(target.kind)}" }
+                                                                Icon { kind: IconKind::ArrowRight, size: 11.0 }
+                                                            }
+                                                        } else {
+                                                            div {
+                                                                key: "base-{index}-{target.name}",
+                                                                class: "reference-row is-unresolved",
+                                                                span { class: "reference-line", "·" }
+                                                                span { class: "reference-copy",
+                                                                    span { class: "reference-preview", "{target.name}" }
+                                                                    span { class: "reference-path", "未解析到源码位置" }
+                                                                }
+                                                                span { class: "reference-kind", "{relation_kind_label(target.kind)}" }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                div { class: "relation-section",
+                                    div { class: "relation-heading",
+                                        span { "派生 / 实现者" }
+                                        span { class: "relation-count", "{type_relations.derived.len()}" }
+                                    }
+                                    if !index_ready {
+                                        div { class: "reference-loading",
+                                            span { class: "source-spinner" }
+                                            "正在建立符号索引，稍后显示跨文件关系。"
+                                        }
+                                    } else if type_relations.derived.is_empty() {
+                                        div { class: "outline-empty", "没有检测到派生类型或实现者。" }
+                                    } else {
+                                        div { class: "reference-list",
+                                            for (index, target) in type_relations.derived.iter().enumerate() {
+                                                {
+                                                    let resolved = target.path.clone().zip(target.line);
+                                                    rsx! {
+                                                        if let Some((path, line)) = resolved {
+                                                            button {
+                                                                r#type: "button",
+                                                                key: "derived-{index}-{target.name}",
+                                                                class: "reference-row",
+                                                                onclick: move |_| source.open_at(path.clone(), line),
+                                                                span { class: "reference-line", "{line}" }
+                                                                span { class: "reference-copy",
+                                                                    span { class: "reference-preview", "{target.name}" }
+                                                                    span { class: "reference-path", "{path}" }
+                                                                }
+                                                                span { class: "reference-kind", "{relation_kind_label(target.kind)}" }
+                                                                Icon { kind: IconKind::ArrowRight, size: 11.0 }
+                                                            }
+                                                        } else {
+                                                            div {
+                                                                key: "derived-{index}-{target.name}",
+                                                                class: "reference-row is-unresolved",
+                                                                span { class: "reference-line", "·" }
+                                                                span { class: "reference-copy",
+                                                                    span { class: "reference-preview", "{target.name}" }
+                                                                    span { class: "reference-path", "未解析到源码位置" }
+                                                                }
+                                                                span { class: "reference-kind", "{relation_kind_label(target.kind)}" }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             div { class: "relation-section",
                                 div { class: "relation-heading",
                                     span { "调用者" }
@@ -890,7 +1022,10 @@ fn build_outline_items(
     needle: &str,
 ) -> Vec<OutlineItem> {
     let mut parents = vec![None; symbols.len()];
-    if matches!(language, "Java" | "TypeScript" | "Rust" | "C++") {
+    if matches!(
+        language,
+        "Java" | "JavaScript" | "TypeScript" | "Rust" | "C++"
+    ) {
         for (inner_index, inner) in symbols.iter().enumerate() {
             let mut best: Option<(usize, u32)> = None;
             for (outer_index, outer) in symbols.iter().enumerate() {
@@ -996,6 +1131,29 @@ fn push_call_children<'a>(
         if node.expanded {
             push_call_children(node.id, children, output);
         }
+    }
+}
+
+fn is_type_symbol(kind: SymbolKind) -> bool {
+    matches!(
+        kind,
+        SymbolKind::Class
+            | SymbolKind::Interface
+            | SymbolKind::Struct
+            | SymbolKind::Union
+            | SymbolKind::Enum
+            | SymbolKind::Type
+            | SymbolKind::Record
+            | SymbolKind::Trait
+            | SymbolKind::Impl
+    )
+}
+
+fn relation_kind_label(kind: TypeRelationKind) -> &'static str {
+    match kind {
+        TypeRelationKind::Extends => "继承",
+        TypeRelationKind::Implements => "实现",
+        TypeRelationKind::Base => "基类",
     }
 }
 

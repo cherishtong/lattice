@@ -419,6 +419,7 @@ impl SourcePack {
     pub fn source_files(&self) -> Result<Vec<String>, String> {
         let extensions: &[&str] = match self.manifest.source_language.as_str() {
             "Java" => &["java"],
+            "JavaScript" => &["js", "jsx", "mjs", "cjs"],
             "Rust" => &["rs"],
             "TypeScript" => &["ts", "tsx", "mts", "cts"],
             _ => &["c", "h", "cc", "cpp", "cxx", "c++", "hpp", "hh", "hxx", "m"],
@@ -585,7 +586,7 @@ fn checksum_tree(
             let path_text = child.to_string_lossy().replace('\\', "/");
             hasher.update(path_text.as_bytes());
             let mut file = fs::File::open(entry.path()).map_err(|error| error.to_string())?;
-            let mut buffer = [0u8; 64 * 1024];
+            let mut buffer = vec![0u8; 64 * 1024];
             loop {
                 let read = file.read(&mut buffer).map_err(|error| error.to_string())?;
                 if read == 0 {

@@ -752,8 +752,10 @@ fn LibraryPanel(source: SourceSession, on_close: EventHandler<()>) -> Element {
                                 "Rust" => "Rs",
                                 "TypeScript" => "Ts",
                                 "SQLite" => "Sq",
-                                "GCC" => "Gc",
-                                "Clang" => "Cl",
+                                "Nginx" => "Nx",
+                                "Spring Boot" => "Sp",
+                                "Vue" => "Vu",
+                                "React" => "Re",
                                 _ => "C",
                             };
                             let root_label = pack.root().display().to_string();

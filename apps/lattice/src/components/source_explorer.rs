@@ -35,9 +35,11 @@ pub fn SourceExplorer(
         "Rust" => ("Rs", "rust-mark"),
         "TypeScript" => ("Ts", "typescript-mark"),
         "SQLite" => ("Sq", "sqlite-mark"),
-        "GCC" => ("Gc", "gcc-mark"),
-        "Clang" => ("Cl", "clang-mark"),
-        _ => ("C", "gcc-mark"),
+        "Nginx" => ("Nx", "c-mark"),
+        "Spring Boot" => ("Sp", "java-mark"),
+        "Vue" => ("Vu", "typescript-mark"),
+        "React" => ("Re", "typescript-mark"),
+        _ => ("C", "c-mark"),
     };
     let bootstrapping = state.tree.is_empty() && state.bootstrap_error.is_none();
 

@@ -83,3 +83,10 @@ powershell -ExecutionPolicy Bypass -File scripts/fetch-opus-mt-model.ps1 -Destin
 - 不进行在线翻译或远程模型调用
 - 长注释按模型上下文截断，并在界面提示
 - 模型不随主程序发布，需单独获取
+- **范围已冻结**：不规划模型市场、多模型管理、术语表、翻译缓存、批量翻译、流式输出或更多语言对
+
+## 许可证
+
+- 模型：`Helsinki-NLP/opus-mt-en-zh`，CC-BY-4.0
+- ONNX Runtime：MIT
+- 发布包需保留对应归属说明

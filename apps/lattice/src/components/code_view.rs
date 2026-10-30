@@ -884,6 +884,7 @@ mod tests {
                 ],
             }],
             symbols: Vec::new(),
+            relations: Vec::new(),
         }
     }
 

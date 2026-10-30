@@ -1,7 +1,7 @@
 //! Source document parsing and syntax highlighting.
 //!
-//! C highlighting uses the official query shipped with `tree-sitter-c`.
-//! Other source extensions are initially rendered as plain UTF-8 text.
+//! Highlighting uses the official queries shipped with each tree-sitter grammar.
+//! Extensions without a grammar are rendered as plain UTF-8 text.
 
 use std::collections::HashSet;
 use std::fs;
@@ -10,7 +10,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator};
 
-const DOCUMENT_CACHE_VERSION: u32 = 2;
+const DOCUMENT_CACHE_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Document {
@@ -18,6 +18,7 @@ pub struct Document {
     pub language: &'static str,
     pub lines: Vec<Line>,
     pub symbols: Vec<Symbol>,
+    pub relations: Vec<TypeRelation>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -135,11 +136,27 @@ impl SymbolKind {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TypeRelationKind {
+    Extends,
+    Implements,
+    Base,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TypeRelation {
+    pub from: String,
+    pub from_line: u32,
+    pub to: String,
+    pub kind: TypeRelationKind,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum SourceLanguage {
     C,
     Cpp,
     Java,
+    JavaScript,
     Rust,
     TypeScript,
     Tsx,
@@ -152,6 +169,7 @@ impl SourceLanguage {
             Self::C => tree_sitter_c::LANGUAGE.into(),
             Self::Cpp => tree_sitter_cpp::LANGUAGE.into(),
             Self::Java => tree_sitter_java::LANGUAGE.into(),
+            Self::JavaScript => tree_sitter_javascript::LANGUAGE.into(),
             Self::Rust => tree_sitter_rust::LANGUAGE.into(),
             Self::TypeScript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
             Self::Tsx => tree_sitter_typescript::LANGUAGE_TSX.into(),
@@ -164,6 +182,7 @@ impl SourceLanguage {
             Self::C => tree_sitter_c::HIGHLIGHT_QUERY,
             Self::Cpp => tree_sitter_cpp::HIGHLIGHT_QUERY,
             Self::Java => tree_sitter_java::HIGHLIGHTS_QUERY,
+            Self::JavaScript => tree_sitter_javascript::HIGHLIGHT_QUERY,
             Self::Rust => tree_sitter_rust::HIGHLIGHTS_QUERY,
             Self::TypeScript | Self::Tsx => tree_sitter_typescript::HIGHLIGHTS_QUERY,
             Self::Text => "",
@@ -175,6 +194,7 @@ impl SourceLanguage {
             Self::C => "C",
             Self::Cpp => "C++",
             Self::Java => "Java",
+            Self::JavaScript => "JavaScript",
             Self::Rust => "Rust",
             Self::TypeScript | Self::Tsx => "TypeScript",
             Self::Text => "Text",
@@ -190,6 +210,7 @@ fn detect_language(path: &str) -> SourceLanguage {
         Some("c" | "h" | "m") => SourceLanguage::C,
         Some("cc" | "cpp" | "cxx" | "c++" | "hpp" | "hh" | "hxx" | "ixx") => SourceLanguage::Cpp,
         Some("java") => SourceLanguage::Java,
+        Some("js" | "jsx" | "mjs" | "cjs") => SourceLanguage::JavaScript,
         Some("rs") => SourceLanguage::Rust,
         Some("tsx") => SourceLanguage::Tsx,
         Some("ts" | "mts" | "cts") => SourceLanguage::TypeScript,
@@ -197,9 +218,48 @@ fn detect_language(path: &str) -> SourceLanguage {
     }
 }
 
+fn looks_like_cpp(source: &str) -> bool {
+    if [
+        "namespace ",
+        "template<",
+        "template <",
+        "public:",
+        "private:",
+        "protected:",
+        "using namespace ",
+    ]
+    .iter()
+    .any(|marker| source.contains(marker))
+    {
+        return true;
+    }
+    source.lines().any(|line| {
+        let line = line.trim_start();
+        if !(line.starts_with("class ") || line.starts_with("struct ")) {
+            return false;
+        }
+        let head = line.split(['{', ';']).next().unwrap_or_default();
+        head.contains(':') && !head.contains("::")
+    })
+}
+
+fn detect_language_for(path: &str, source: &str) -> SourceLanguage {
+    let language = detect_language(path);
+    if language == SourceLanguage::C && path.ends_with(".h") && looks_like_cpp(source) {
+        SourceLanguage::Cpp
+    } else {
+        language
+    }
+}
+
+/// 根据路径和源码内容判断显示语言；含 C++ 结构的 `.h` 按 C++ 处理。
+pub fn language_name(path: &str, source: &str) -> &'static str {
+    detect_language_for(path, source).display_name()
+}
+
 pub fn parse(path: &str, source: &str) -> Result<Document, String> {
     let normalized = source.replace("\r\n", "\n");
-    let kind = detect_language(path);
+    let kind = detect_language_for(path, &normalized);
     if kind == SourceLanguage::Text {
         return Ok(plain_document(path, &normalized));
     }
@@ -259,13 +319,15 @@ pub fn parse(path: &str, source: &str) -> Result<Document, String> {
             &mut symbols,
             &mut seen,
         ),
-        SourceLanguage::TypeScript | SourceLanguage::Tsx => collect_typescript_symbols(
-            tree.root_node(),
-            normalized.as_bytes(),
-            &source_lines,
-            &mut symbols,
-            &mut seen,
-        ),
+        SourceLanguage::JavaScript | SourceLanguage::TypeScript | SourceLanguage::Tsx => {
+            collect_typescript_symbols(
+                tree.root_node(),
+                normalized.as_bytes(),
+                &source_lines,
+                &mut symbols,
+                &mut seen,
+            )
+        }
         SourceLanguage::C | SourceLanguage::Cpp => collect_symbols(
             tree.root_node(),
             normalized.as_bytes(),
@@ -276,23 +338,348 @@ pub fn parse(path: &str, source: &str) -> Result<Document, String> {
         SourceLanguage::Text => {}
     }
     symbols.sort_by_key(|symbol| (symbol.start_line, symbol.name.clone()));
+    let relations = type_relations(&symbols, kind.display_name());
 
     Ok(Document {
         path: path.to_owned(),
         language: kind.display_name(),
         lines,
         symbols,
+        relations,
     })
 }
 
 /// 提取真实标识符引用，自动排除注释与字符串。
+pub fn type_relations(symbols: &[Symbol], language: &str) -> Vec<TypeRelation> {
+    let mut relations = Vec::new();
+    for symbol in symbols {
+        let signature = symbol.signature.trim();
+        if signature.is_empty() {
+            continue;
+        }
+        match language {
+            "Java" => {
+                if matches!(
+                    symbol.kind,
+                    SymbolKind::Class
+                        | SymbolKind::Interface
+                        | SymbolKind::Record
+                        | SymbolKind::Enum
+                        | SymbolKind::Annotation
+                ) {
+                    if let Some(clause) = clause_after(signature, "extends", &["implements", "{"]) {
+                        push_targets(
+                            &mut relations,
+                            &symbol.name,
+                            symbol.start_line,
+                            clause,
+                            TypeRelationKind::Extends,
+                        );
+                    }
+                    if let Some(clause) = clause_after(signature, "implements", &["{"]) {
+                        push_targets(
+                            &mut relations,
+                            &symbol.name,
+                            symbol.start_line,
+                            clause,
+                            TypeRelationKind::Implements,
+                        );
+                    }
+                }
+            }
+            "JavaScript" | "TypeScript" => {
+                if matches!(symbol.kind, SymbolKind::Class | SymbolKind::Interface) {
+                    if let Some(clause) = clause_after(signature, "extends", &["implements", "{"]) {
+                        push_targets(
+                            &mut relations,
+                            &symbol.name,
+                            symbol.start_line,
+                            clause,
+                            TypeRelationKind::Extends,
+                        );
+                    }
+                    if let Some(clause) = clause_after(signature, "implements", &["{"]) {
+                        push_targets(
+                            &mut relations,
+                            &symbol.name,
+                            symbol.start_line,
+                            clause,
+                            TypeRelationKind::Implements,
+                        );
+                    }
+                }
+            }
+            "C++" => {
+                if matches!(
+                    symbol.kind,
+                    SymbolKind::Class | SymbolKind::Struct | SymbolKind::Union
+                ) && let Some(clause) = cpp_base_clause(signature)
+                {
+                    push_targets(
+                        &mut relations,
+                        &symbol.name,
+                        symbol.start_line,
+                        clause,
+                        TypeRelationKind::Base,
+                    );
+                }
+            }
+            "Rust" => {
+                let lower = signature.to_ascii_lowercase();
+                if lower.starts_with("impl") || lower.starts_with("unsafe impl") {
+                    if let Some((trait_name, type_name)) = rust_impl_parts(signature)
+                        && let Some(target) = normalize_type_name(&type_name)
+                        && let Some(trait_name) = normalize_type_name(&trait_name)
+                    {
+                        relations.push(TypeRelation {
+                            from: target,
+                            from_line: symbol.start_line,
+                            to: trait_name,
+                            kind: TypeRelationKind::Implements,
+                        });
+                    }
+                } else if symbol.kind == SymbolKind::Trait
+                    && let Some((_, clause)) = signature.split_once(':')
+                {
+                    push_targets_with(
+                        &mut relations,
+                        &symbol.name,
+                        symbol.start_line,
+                        clause,
+                        TypeRelationKind::Extends,
+                        '+',
+                    );
+                }
+            }
+            _ => {}
+        }
+    }
+
+    relations.sort_by(|a, b| {
+        a.from
+            .cmp(&b.from)
+            .then_with(|| a.from_line.cmp(&b.from_line))
+            .then_with(|| a.to.cmp(&b.to))
+    });
+    relations.dedup_by(|a, b| {
+        a.from == b.from && a.from_line == b.from_line && a.to == b.to && a.kind == b.kind
+    });
+    relations
+}
+
+fn clause_after<'a>(signature: &'a str, keyword: &str, terminators: &[&str]) -> Option<&'a str> {
+    let lower = signature.to_ascii_lowercase();
+    let needle = format!(" {keyword} ");
+    let start = lower.find(&needle)? + needle.len();
+    let mut end = signature.len();
+    for terminator in terminators {
+        if let Some(index) = lower[start..].find(terminator) {
+            end = end.min(start + index);
+        }
+    }
+    Some(signature[start..end].trim())
+}
+
+fn cpp_base_clause(signature: &str) -> Option<&str> {
+    let lower = signature.to_ascii_lowercase();
+    let (keyword_at, keyword_len) = lower
+        .rfind("class ")
+        .map(|index| (index, 6))
+        .or_else(|| lower.rfind("struct ").map(|index| (index, 7)))?;
+    let after_keyword = keyword_at + keyword_len;
+    let body = &signature[after_keyword..];
+    let mut depth = 0i32;
+    let mut colon = None;
+    let bytes = body.as_bytes();
+    for (index, byte) in bytes.iter().enumerate() {
+        match byte {
+            b'<' => depth += 1,
+            b'>' => depth -= 1,
+            b'{' if depth <= 0 => break,
+            b':' if depth <= 0
+                && bytes.get(index + 1) != Some(&b':')
+                && (index == 0 || bytes[index - 1] != b':') =>
+            {
+                colon = Some(index);
+                break;
+            }
+            _ => {}
+        }
+    }
+    let colon = colon?;
+    let rest = &body[colon + 1..];
+    let end = rest
+        .find('{')
+        .or_else(|| rest.find(';'))
+        .unwrap_or(rest.len());
+    Some(rest[..end].trim())
+}
+
+fn rust_impl_parts(signature: &str) -> Option<(String, String)> {
+    let lower = signature.to_ascii_lowercase();
+    let impl_at = lower.find("impl")?;
+    let rest = &signature[impl_at + 4..];
+    let rest = skip_generics(rest).trim_start();
+    let lower_rest = rest.to_ascii_lowercase();
+    let for_at = lower_rest.find(" for ")?;
+    let trait_part = rest[..for_at].trim();
+    let mut type_part = rest[for_at + 5..].trim();
+    if let Some(where_at) = type_part.to_ascii_lowercase().find(" where") {
+        type_part = type_part[..where_at].trim();
+    }
+    let type_part = type_part
+        .split(['{', ';'])
+        .next()
+        .unwrap_or(type_part)
+        .trim();
+    Some((trait_part.to_owned(), type_part.to_owned()))
+}
+
+fn skip_generics(value: &str) -> &str {
+    let value = value.trim_start();
+    if !value.starts_with('<') {
+        return value;
+    }
+    let mut depth = 0i32;
+    for (index, character) in value.char_indices() {
+        match character {
+            '<' => depth += 1,
+            '>' => {
+                depth -= 1;
+                if depth == 0 {
+                    return value[index + 1..].trim_start();
+                }
+            }
+            _ => {}
+        }
+    }
+    value
+}
+
+fn push_targets(
+    relations: &mut Vec<TypeRelation>,
+    from: &str,
+    from_line: u32,
+    clause: &str,
+    kind: TypeRelationKind,
+) {
+    push_targets_with(relations, from, from_line, clause, kind, ',');
+}
+
+fn push_targets_with(
+    relations: &mut Vec<TypeRelation>,
+    from: &str,
+    from_line: u32,
+    clause: &str,
+    kind: TypeRelationKind,
+    separator: char,
+) {
+    for target in split_top_level(clause, separator) {
+        if let Some(target) = normalize_type_name(target) {
+            relations.push(TypeRelation {
+                from: from.to_owned(),
+                from_line,
+                to: target,
+                kind,
+            });
+        }
+    }
+}
+
+fn split_top_level(value: &str, separator: char) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut depth = 0i32;
+    let mut start = 0usize;
+    for (index, character) in value.char_indices() {
+        match character {
+            '<' | '(' | '[' | '{' => depth += 1,
+            '>' | ')' | ']' | '}' => depth -= 1,
+            _ if character == separator && depth <= 0 => {
+                parts.push(value[start..index].trim());
+                start = index + character.len_utf8();
+            }
+            _ => {}
+        }
+    }
+    parts.push(value[start..].trim());
+    parts
+}
+
+fn normalize_type_name(value: &str) -> Option<String> {
+    let mut value = value.trim();
+    loop {
+        let lower = value.to_ascii_lowercase();
+        let mut changed = false;
+        for prefix in [
+            "public ",
+            "private ",
+            "protected ",
+            "virtual ",
+            "final ",
+            "abstract ",
+            "sealed ",
+            "static ",
+            "extends ",
+            "implements ",
+            "? extends ",
+            "? super ",
+        ] {
+            if lower.starts_with(prefix) {
+                value = value[prefix.len()..].trim();
+                changed = true;
+                break;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    let value = skip_generics(value);
+    let value = value
+        .find('<')
+        .map_or(value, |index| &value[..index])
+        .trim();
+    let mut value = value
+        .split(['{', ';', '=', '!'])
+        .next()
+        .unwrap_or(value)
+        .trim();
+    value = value.trim_end_matches(['?', '*', '&', '.', ']', '[']);
+    value = value.trim();
+    if value.is_empty() {
+        return None;
+    }
+    let segment = value
+        .rsplit("::")
+        .next()
+        .unwrap_or(value)
+        .rsplit('.')
+        .next()
+        .unwrap_or(value)
+        .trim();
+    let segment = segment.split_whitespace().last().unwrap_or(segment);
+    let segment = segment.trim_matches(|character: char| {
+        !character.is_alphanumeric() && character != '_' && character != '$'
+    });
+    if segment.is_empty()
+        || matches!(
+            segment,
+            "class" | "struct" | "interface" | "trait" | "impl" | "public" | "private"
+        )
+    {
+        None
+    } else {
+        Some(segment.to_owned())
+    }
+}
+
 pub fn references(
     path: &str,
     source: &str,
     name: &str,
 ) -> Result<Vec<ReferenceOccurrence>, String> {
     let normalized = source.replace("\r\n", "\n");
-    let kind = detect_language(path);
+    let kind = detect_language_for(path, &normalized);
     if kind == SourceLanguage::Text {
         return Ok(Vec::new());
     }
@@ -515,7 +902,7 @@ pub fn call_sites(
     end_line: u32,
 ) -> Result<Vec<CallSite>, String> {
     let normalized = source.replace("\r\n", "\n");
-    let kind = detect_language(path);
+    let kind = detect_language_for(path, &normalized);
     if kind == SourceLanguage::Text {
         return Ok(Vec::new());
     }
@@ -594,7 +981,7 @@ fn call_name_text(node: Node<'_>, source: &[u8]) -> Option<String> {
 
 pub fn outline(path: &str, source: &str) -> Result<Vec<Symbol>, String> {
     let normalized = source.replace("\r\n", "\n");
-    let kind = detect_language(path);
+    let kind = detect_language_for(path, &normalized);
     if kind == SourceLanguage::Text {
         return Ok(Vec::new());
     }
@@ -625,13 +1012,15 @@ pub fn outline(path: &str, source: &str) -> Result<Vec<Symbol>, String> {
             &mut symbols,
             &mut seen,
         ),
-        SourceLanguage::TypeScript | SourceLanguage::Tsx => collect_typescript_symbols(
-            tree.root_node(),
-            normalized.as_bytes(),
-            &source_lines,
-            &mut symbols,
-            &mut seen,
-        ),
+        SourceLanguage::JavaScript | SourceLanguage::TypeScript | SourceLanguage::Tsx => {
+            collect_typescript_symbols(
+                tree.root_node(),
+                normalized.as_bytes(),
+                &source_lines,
+                &mut symbols,
+                &mut seen,
+            )
+        }
         SourceLanguage::C | SourceLanguage::Cpp => collect_symbols(
             tree.root_node(),
             normalized.as_bytes(),
@@ -651,6 +1040,7 @@ struct CachedDocument {
     fingerprint: u64,
     lines: Vec<Vec<CachedSpan>>,
     symbols: Vec<CachedSymbol>,
+    relations: Vec<TypeRelation>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -769,9 +1159,10 @@ fn load_document_cache(
 
     Some(Document {
         path: path.to_owned(),
-        language: detect_language(path).display_name(),
+        language: language_name(path, source),
         lines,
         symbols,
+        relations: cached.relations,
     })
 }
 
@@ -861,6 +1252,7 @@ fn write_document_cache(
                 signature: symbol.signature.clone(),
             })
             .collect(),
+        relations: document.relations.clone(),
     };
 
     let bytes =
@@ -971,6 +1363,7 @@ fn plain_document(path: &str, source: &str) -> Document {
         language: "Text",
         lines,
         symbols: Vec::new(),
+        relations: Vec::new(),
     }
 }
 
@@ -1150,7 +1543,7 @@ fn collect_symbols(
                     kind,
                     start_line,
                     end_line,
-                    signature: truncate(signature, 96),
+                    signature: truncate(signature, 180),
                 });
             }
         }
@@ -1259,7 +1652,7 @@ fn collect_java_symbols(
                     kind,
                     start_line,
                     end_line,
-                    signature: truncate(signature, 96),
+                    signature: truncate(signature, 180),
                 });
             }
         }
@@ -1417,7 +1810,7 @@ fn push_named_symbol(
         kind,
         start_line,
         end_line,
-        signature: truncate(signature, 96),
+        signature: truncate(signature, 180),
     });
 }
 
@@ -1775,5 +2168,167 @@ const label = "parse";
         assert!(kinds.contains(&ReferenceKind::Definition));
         assert!(kinds.contains(&ReferenceKind::Call));
         assert!(occurrences.iter().all(|item| item.line != 7));
+    }
+
+    fn relation_symbol(name: &str, kind: SymbolKind, line: u32, signature: &str) -> Symbol {
+        Symbol {
+            name: name.to_owned(),
+            kind,
+            start_line: line,
+            end_line: line + 10,
+            signature: signature.to_owned(),
+        }
+    }
+
+    #[test]
+    fn extracts_java_type_relations() {
+        let symbols = vec![relation_symbol(
+            "ArrayList",
+            SymbolKind::Class,
+            10,
+            "public class ArrayList<E> extends AbstractList<E> implements List<E>, RandomAccess",
+        )];
+        let relations = type_relations(&symbols, "Java");
+        assert!(relations.iter().any(|relation| {
+            relation.from == "ArrayList"
+                && relation.to == "AbstractList"
+                && relation.kind == TypeRelationKind::Extends
+        }));
+        assert!(relations.iter().any(|relation| {
+            relation.from == "ArrayList"
+                && relation.to == "List"
+                && relation.kind == TypeRelationKind::Implements
+        }));
+        assert!(
+            relations
+                .iter()
+                .any(|relation| relation.to == "RandomAccess")
+        );
+    }
+
+    #[test]
+    fn outlines_javascript_classes_and_functions() {
+        let source = r#"
+import { Base } from "./base";
+
+export class Counter extends Base {
+    constructor() {
+        super();
+    }
+    increment() {}
+}
+
+export function create() {
+    return new Counter();
+}
+export const helper = () => 1;
+"#;
+        let document = parse("counter.js", source).expect("parse JavaScript");
+        assert_eq!(document.language, "JavaScript");
+        for (name, kind) in [
+            ("Counter", SymbolKind::Class),
+            ("constructor", SymbolKind::Constructor),
+            ("increment", SymbolKind::Method),
+            ("create", SymbolKind::Function),
+            ("helper", SymbolKind::Function),
+        ] {
+            assert!(
+                document
+                    .symbols
+                    .iter()
+                    .any(|symbol| symbol.name == name && symbol.kind == kind),
+                "missing {name} ({kind:?})"
+            );
+        }
+        assert!(
+            document
+                .relations
+                .iter()
+                .any(|relation| { relation.from == "Counter" && relation.to == "Base" })
+        );
+    }
+
+    #[test]
+    fn extracts_typescript_type_relations() {
+        let symbols = vec![relation_symbol(
+            "Model",
+            SymbolKind::Class,
+            20,
+            "export class Model extends Base implements Serializable, Disposable",
+        )];
+        let relations = type_relations(&symbols, "TypeScript");
+        assert!(relations.iter().any(|relation| {
+            relation.to == "Base" && relation.kind == TypeRelationKind::Extends
+        }));
+        assert!(relations.iter().any(|relation| {
+            relation.to == "Serializable" && relation.kind == TypeRelationKind::Implements
+        }));
+        assert!(relations.iter().any(|relation| relation.to == "Disposable"));
+    }
+
+    #[test]
+    fn extracts_cpp_base_relations() {
+        let symbols = vec![relation_symbol(
+            "Widget",
+            SymbolKind::Class,
+            30,
+            "class Widget final : public Base, private Mixin",
+        )];
+        let relations = type_relations(&symbols, "C++");
+        assert!(
+            relations.iter().any(|relation| {
+                relation.to == "Base" && relation.kind == TypeRelationKind::Base
+            })
+        );
+        assert!(relations.iter().any(|relation| relation.to == "Mixin"));
+    }
+
+    #[test]
+    fn extracts_rust_impl_and_trait_relations() {
+        let symbols = vec![
+            relation_symbol(
+                "Display",
+                SymbolKind::Trait,
+                40,
+                "pub trait Display: Debug + Clone",
+            ),
+            relation_symbol(
+                "impl Display for Widget",
+                SymbolKind::Impl,
+                50,
+                "impl Display for Widget<'_>",
+            ),
+        ];
+        let relations = type_relations(&symbols, "Rust");
+        assert!(relations.iter().any(|relation| {
+            relation.from == "Widget"
+                && relation.to == "Display"
+                && relation.kind == TypeRelationKind::Implements
+        }));
+        assert!(relations.iter().any(|relation| {
+            relation.from == "Display"
+                && relation.to == "Debug"
+                && relation.kind == TypeRelationKind::Extends
+        }));
+        assert!(relations.iter().any(|relation| relation.to == "Clone"));
+    }
+
+    #[test]
+    fn cpp_headers_are_detected_by_content() {
+        let source = "namespace demo { class Widget : public Base {}; }";
+        let document = parse("widget.h", source).expect("parse c++ header");
+        assert_eq!(document.language, "C++");
+        assert!(document.relations.iter().any(|relation| {
+            relation.from == "Widget"
+                && relation.to == "Base"
+                && relation.kind == TypeRelationKind::Base
+        }));
+    }
+
+    #[test]
+    fn c_headers_with_asm_colons_stay_c() {
+        let source = "#define barrier() __asm__ volatile (\"\" ::: \"memory\")\n";
+        let document = parse("atomic.h", source).expect("parse c header");
+        assert_eq!(document.language, "C");
     }
 }

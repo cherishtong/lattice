@@ -398,8 +398,7 @@ kbd {
 }
 
 .sqlite-mark,
-.gcc-mark,
-.clang-mark {
+.c-mark {
     display: flex;
     flex: 0 0 35px;
     align-items: center;
@@ -413,10 +412,6 @@ kbd {
     background: var(--accent-faint);
     border: 1px solid var(--brand-mark-border);
     border-radius: 9px;
-}
-
-.clang-mark {
-    color: var(--token-type);
 }
 
 .source-pack-copy {

@@ -4,14 +4,14 @@
 //! 按需读取，不在内存中复制整个仓库。
 
 use lattice_content::{SourceEntry, SourcePack, SourceTree};
-use lattice_parser::SymbolKind;
+use lattice_parser::{SymbolKind, TypeRelationKind};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-const CACHE_FORMAT_VERSION: u32 = 2;
+const CACHE_FORMAT_VERSION: u32 = 3;
 
 pub const INDEX_CANCELLED: &str = "索引建立已取消";
 
@@ -66,6 +66,29 @@ pub struct IndexedFile {
     pub path: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IndexedRelation {
+    pub from: String,
+    pub from_path: String,
+    pub from_line: u32,
+    pub to: String,
+    pub kind: TypeRelationKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RelationTarget {
+    pub name: String,
+    pub path: Option<String>,
+    pub line: Option<u32>,
+    pub kind: TypeRelationKind,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct TypeRelations {
+    pub bases: Vec<RelationTarget>,
+    pub derived: Vec<RelationTarget>,
+}
+
 #[derive(Debug)]
 pub struct IndexLoad {
     pub index: SourceIndex,
@@ -79,6 +102,7 @@ struct CachedIndex {
     fingerprint: String,
     symbols: Vec<CachedSymbol>,
     files: Vec<IndexedFile>,
+    relations: Vec<IndexedRelation>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -95,6 +119,7 @@ struct CachedSymbol {
 pub struct SourceIndex {
     symbols: Vec<IndexedSymbol>,
     files: Vec<IndexedFile>,
+    relations: Vec<IndexedRelation>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -125,6 +150,7 @@ impl SourceIndex {
             .total
             .store(source_files.len() as u64, Ordering::Relaxed);
         let mut symbols = Vec::new();
+        let mut relations = Vec::new();
         for (index, path) in source_files.iter().enumerate() {
             if control.is_cancelled() {
                 return Ok(None);
@@ -136,9 +162,21 @@ impl SourceIndex {
             let Ok(source) = pack.read_text(path) else {
                 continue;
             };
+            let language = lattice_parser::language_name(path, &source);
             let Ok(outline) = lattice_parser::outline(path, &source) else {
                 continue;
             };
+            relations.extend(
+                lattice_parser::type_relations(&outline, language)
+                    .into_iter()
+                    .map(|relation| IndexedRelation {
+                        from: relation.from,
+                        from_path: path.clone(),
+                        from_line: relation.from_line,
+                        to: relation.to,
+                        kind: relation.kind,
+                    }),
+            );
             symbols.extend(outline.into_iter().map(|symbol| IndexedSymbol {
                 name: symbol.name,
                 kind: symbol.kind,
@@ -161,8 +199,26 @@ impl SourceIndex {
         });
         symbols
             .dedup_by(|a, b| a.name == b.name && a.path == b.path && a.start_line == b.start_line);
+        relations.sort_by(|a, b| {
+            a.from
+                .cmp(&b.from)
+                .then_with(|| a.from_path.cmp(&b.from_path))
+                .then_with(|| a.from_line.cmp(&b.from_line))
+                .then_with(|| a.to.cmp(&b.to))
+        });
+        relations.dedup_by(|a, b| {
+            a.from == b.from
+                && a.from_path == b.from_path
+                && a.from_line == b.from_line
+                && a.to == b.to
+                && a.kind == b.kind
+        });
 
-        Ok(Some(Self { symbols, files }))
+        Ok(Some(Self {
+            symbols,
+            files,
+            relations,
+        }))
     }
 
     /// 预构建缓存默认与 Source Pack 放在一起，便于离线包携带。
@@ -225,6 +281,7 @@ impl SourceIndex {
                 })
                 .collect(),
             files: self.files.clone(),
+            relations: self.relations.clone(),
         };
         let bytes =
             postcard::to_stdvec(&cached).map_err(|error| format!("序列化索引缓存失败: {error}"))?;
@@ -248,6 +305,10 @@ impl SourceIndex {
         self.files.len()
     }
 
+    pub fn relation_count(&self) -> usize {
+        self.relations.len()
+    }
+
     pub fn definition(&self, name: &str) -> Option<&IndexedSymbol> {
         self.definition_from(name, None, "C")
     }
@@ -260,6 +321,57 @@ impl SourceIndex {
         language: &str,
     ) -> Option<&IndexedSymbol> {
         self.definition_with_hints(name, context_path, language, &[])
+    }
+
+    /// 返回当前类型的直接基类/接口与直接派生类型/实现者。
+    pub fn relations_for(
+        &self,
+        name: &str,
+        path: &str,
+        line: u32,
+        language: &str,
+    ) -> TypeRelations {
+        let mut bases = Vec::new();
+        for relation in self.relations.iter().filter(|relation| {
+            relation.from == name && relation.from_path == path && relation.from_line == line
+        }) {
+            let definition = self.definition_from(&relation.to, Some(path), language);
+            bases.push(RelationTarget {
+                name: relation.to.clone(),
+                path: definition.map(|symbol| symbol.path.clone()),
+                line: definition.map(|symbol| symbol.start_line),
+                kind: relation.kind,
+            });
+        }
+
+        let mut derived = Vec::new();
+        for relation in self.relations.iter().filter(|relation| {
+            relation.to == name && !(relation.from_path == path && relation.from_line == line)
+        }) {
+            derived.push(RelationTarget {
+                name: relation.from.clone(),
+                path: Some(relation.from_path.clone()),
+                line: Some(relation.from_line),
+                kind: relation.kind,
+            });
+        }
+
+        bases.sort_by(|a, b| {
+            a.name
+                .cmp(&b.name)
+                .then_with(|| a.path.cmp(&b.path))
+                .then_with(|| a.line.cmp(&b.line))
+        });
+        bases.dedup_by(|a, b| a.name == b.name && a.path == b.path && a.line == b.line);
+        derived.sort_by(|a, b| {
+            a.name
+                .cmp(&b.name)
+                .then_with(|| a.path.cmp(&b.path))
+                .then_with(|| a.line.cmp(&b.line))
+        });
+        derived.dedup_by(|a, b| a.name == b.name && a.path == b.path && a.line == b.line);
+
+        TypeRelations { bases, derived }
     }
 
     /// 使用当前文件解析出的 import/use/include 路径提示排序定义候选。
@@ -492,6 +604,7 @@ fn load_cache(path: &Path, fingerprint: &str) -> Option<SourceIndex> {
     Some(SourceIndex {
         symbols,
         files: cached.files,
+        relations: cached.relations,
     })
 }
 
@@ -625,6 +738,7 @@ mod tests {
                     path: "Include/listobject.h".to_owned(),
                 },
             ],
+            relations: Vec::new(),
         }
     }
 
@@ -704,6 +818,7 @@ mod tests {
                 ),
             ],
             files: Vec::new(),
+            relations: Vec::new(),
         };
         let context = Some("src/java.base/share/classes/java/util/HashMap.java");
 
@@ -716,6 +831,43 @@ mod tests {
             .definition_from("ArrayList", context, "Java")
             .expect("class definition");
         assert_eq!(class.kind, SymbolKind::Class);
+    }
+
+    #[test]
+    fn type_relations_resolve_bases_and_derived_types() {
+        let symbol = |name: &str, kind, line| IndexedSymbol {
+            name: name.to_owned(),
+            kind,
+            path: "src/demo.java".to_owned(),
+            start_line: line,
+            end_line: line + 8,
+            signature: String::new(),
+        };
+        let index = SourceIndex {
+            symbols: vec![
+                symbol("Derived", SymbolKind::Class, 10),
+                symbol("Base", SymbolKind::Class, 40),
+            ],
+            files: Vec::new(),
+            relations: vec![IndexedRelation {
+                from: "Derived".to_owned(),
+                from_path: "src/demo.java".to_owned(),
+                from_line: 10,
+                to: "Base".to_owned(),
+                kind: TypeRelationKind::Extends,
+            }],
+        };
+
+        let derived = index.relations_for("Derived", "src/demo.java", 10, "Java");
+        assert_eq!(derived.bases.len(), 1);
+        assert_eq!(derived.bases[0].name, "Base");
+        assert_eq!(derived.bases[0].line, Some(40));
+        assert!(derived.derived.is_empty());
+
+        let base = index.relations_for("Base", "src/demo.java", 40, "Java");
+        assert_eq!(base.derived.len(), 1);
+        assert_eq!(base.derived[0].name, "Derived");
+        assert_eq!(base.derived[0].line, Some(10));
     }
 
     #[test]
@@ -735,6 +887,7 @@ mod tests {
                 symbol("parse", "src/compiler/program.ts"),
             ],
             files: Vec::new(),
+            relations: Vec::new(),
         };
         let found = index
             .definition_with_hints(

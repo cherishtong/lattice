@@ -16,12 +16,19 @@ try {
     cargo build --release -p lattice -p lattice-translator --offline
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+    $targetDirectory = cargo metadata --format-version 1 --no-deps --offline |
+        ConvertFrom-Json |
+        Select-Object -ExpandProperty target_directory
+    if (-not (Test-Path -LiteralPath $targetDirectory)) {
+        throw "Cargo target directory not found: $targetDirectory"
+    }
+
     if (Test-Path -LiteralPath $portable) {
         Remove-Item -LiteralPath $portable -Recurse -Force
     }
     New-Item -ItemType Directory -Path $portable -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $root "target\release\lattice.exe") -Destination $portable
-    Copy-Item -LiteralPath (Join-Path $root "target\release\lattice-translator.exe") -Destination $portable
+    Copy-Item -LiteralPath (Join-Path $targetDirectory "release\lattice.exe") -Destination $portable
+    Copy-Item -LiteralPath (Join-Path $targetDirectory "release\lattice-translator.exe") -Destination $portable
     Copy-Item -LiteralPath (Join-Path $root "README.md") -Destination $portable
     New-Item -ItemType Directory -Path (Join-Path $portable "docs") -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $root "docs\size-budget.md") -Destination (Join-Path $portable "docs")

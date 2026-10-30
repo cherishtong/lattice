@@ -16,8 +16,9 @@ fn main() {
     let index_started = Instant::now();
     let loaded = SourceIndex::load_or_build(&pack, &tree).expect("symbol index");
     println!(
-        "indexed {} symbols in {:?} (cache loaded={}, persisted={})",
+        "indexed {} symbols and {} type relations in {:?} (cache loaded={}, persisted={})",
         loaded.index.symbol_count(),
+        loaded.index.relation_count(),
         index_started.elapsed(),
         loaded.loaded_from_cache,
         loaded.persisted

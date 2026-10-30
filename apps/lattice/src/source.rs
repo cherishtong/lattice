@@ -1731,6 +1731,7 @@ fn language_for_path(path: &str) -> &'static str {
         .and_then(|extension| extension.to_str())
     {
         Some("java") => "Java",
+        Some("js" | "jsx" | "mjs" | "cjs") => "JavaScript",
         Some("rs") => "Rust",
         Some("ts" | "tsx" | "mts" | "cts") => "TypeScript",
         _ => "C",
@@ -1742,7 +1743,7 @@ fn might_contain_dependency(language: &str, line: &str) -> bool {
     match language {
         "Java" => trimmed.starts_with("import ") || trimmed.starts_with("package "),
         "Rust" => trimmed.starts_with("use ") || trimmed.starts_with("mod "),
-        "TypeScript" => {
+        "TypeScript" | "JavaScript" => {
             trimmed.starts_with("import ")
                 || trimmed.starts_with("export ")
                 || trimmed.contains("require(")
@@ -1755,7 +1756,7 @@ fn dependency_hints_for_line(language: &str, line: &str, active_path: &str) -> V
     let mut hints = Vec::new();
     match language {
         "Java" => collect_java_hints(line, &mut hints),
-        "TypeScript" => collect_typescript_hints(line, active_path, &mut hints),
+        "TypeScript" | "JavaScript" => collect_typescript_hints(line, active_path, &mut hints),
         "Rust" => collect_rust_hints(line, &mut hints),
         _ => collect_c_hints(line, &mut hints),
     }
@@ -1815,7 +1816,9 @@ fn definition_hints(document: &Document, active_path: &str) -> Vec<String> {
         }
         match document.language {
             "Java" => collect_java_hints(line, &mut hints),
-            "TypeScript" => collect_typescript_hints(line, active_path, &mut hints),
+            "TypeScript" | "JavaScript" => {
+                collect_typescript_hints(line, active_path, &mut hints);
+            }
             "Rust" => collect_rust_hints(line, &mut hints),
             _ => collect_c_hints(line, &mut hints),
         }
@@ -2344,6 +2347,7 @@ mod tests {
                 })
                 .collect(),
             symbols: Vec::new(),
+            relations: Vec::new(),
         }
     }
 

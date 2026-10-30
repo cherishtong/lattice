@@ -26,7 +26,7 @@ try {
     cargo run --release -p lattice-query --example prebuild_documents
     Write-Host ""
     Write-Host "Prebuilt index and document cache:"
-    Get-Item (Join-Path $env:LATTICE_SOURCE_PACK ".lattice\symbol-index-v2.postcard") |
+    Get-Item (Join-Path $env:LATTICE_SOURCE_PACK ".lattice\symbol-index-v3.postcard") |
         Select-Object FullName, Length, LastWriteTime
 } finally {
     Pop-Location
