@@ -1,6 +1,6 @@
 ---
 name: Product Promo Video
-description: Produce a polished vertical product promo video with an HTML/Chrome frame renderer, Edge TTS narration, original ambient music, and ffmpeg mixing. Use for 9:16 product intros, launch teasers, feature tours, or restyling an existing promo.
+description: Produce a polished vertical or landscape product promo video with an HTML/Chrome frame renderer, Edge TTS narration, original ambient music, and ffmpeg mixing. Use for 9:16 or 16:9 product intros, launch teasers, feature tours, or restyling an existing promo.
 ---
 
 # Product Promo Video
@@ -25,7 +25,7 @@ motion-graphics sequences. This style is deliberately slow.
 
 ## Output contract
 
-- 1080 × 1920, 9:16, 30 fps
+- 1080 × 1920 (9:16) or 1920 × 1080 (16:9), 30 fps
 - 45–90 seconds; 75–90 seconds when showing UI and themes
 - H.264 High, CRF 18, yuv420p, AAC 192 kbps / 48 kHz
 - Final loudness about -16 LUFS, true peak ≤ -1.5 dBFS
@@ -70,6 +70,16 @@ Core rules:
 - Use real screenshots inside dark rounded frames when available; use
   high-fidelity HTML mockups only when fresh captures are unavailable.
 - Avoid stock photos, 3D blobs, glossy gradients, emoji, and fast zooms.
+
+## Orientation
+
+Both orientations share narration, audio, timeline, tokens, and scene order.
+Do not crop the vertical cut; re-lay out each scene.
+
+- 9:16: stack content; leave the lower ~400 px quiet.
+- 16:9: split into columns; keep the bottom 120 px quiet.
+- Read `references/landscape.md` for the scene-by-scene mapping and the
+  horizontal call-tree redraw.
 
 ## Scene grammar
 
@@ -155,5 +165,5 @@ ffmpeg -framerate 30 -i frames/frame-%04d.jpg -i final-audio.wav `
 
 Copy this whole directory into another project as
 `.opencode/skills/product-promo-video/`, or add its parent directory to the
-`skills` array in `opencode.json`. `examples/lattice-vertical.html` is a complete
-10-scene reference implementation with the exact visual system.
+`skills` array in `opencode.json`. `examples/lattice-vertical.html` and `examples/lattice-horizontal.html` are
+complete 10-scene reference implementations with the exact visual system.

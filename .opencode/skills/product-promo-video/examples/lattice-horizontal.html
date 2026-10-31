@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Lattice Vertical Promo</title>
+<style>
+  :root {
+    --bg: #0b0a08;
+    --panel: #14110d;
+    --panel-2: #191510;
+    --line: rgba(242, 230, 212, .12);
+    --line-soft: rgba(242, 230, 212, .06);
+    --text: #f4ede2;
+    --soft: #cabfb0;
+    --sub: #9b8f7e;
+    --muted: #6d6355;
+    --accent: #e86a58;
+    --accent-soft: rgba(232, 106, 88, .13);
+    --gold: #d9a441;
+    --green: #86b57d;
+    --azure: #7fa6c9;
+    --mono: "Cascadia Code", "Cascadia Mono", Consolas, monospace;
+    --sans: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  body { font-family: var(--sans); color: var(--text); -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+
+  .bg-base {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(760px 900px at 16% 4%, rgba(196, 68, 52, .22), transparent 62%),
+      radial-gradient(820px 900px at 90% 88%, rgba(150, 104, 36, .12), transparent 68%),
+      linear-gradient(168deg, #0e0c09 0%, #0a0907 58%, #0c0a08 100%);
+  }
+  .bg-grid {
+    position: absolute; inset: -80px;
+    background-image:
+      linear-gradient(rgba(242,230,212,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(242,230,212,.045) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(ellipse at 50% 40%, black 0%, transparent 74%);
+  }
+  .grain {
+    position: absolute; inset: 0; opacity: .05; mix-blend-mode: overlay; pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='0.7'/></svg>");
+  }
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 46%, rgba(0,0,0,.46) 100%);
+  }
+  .glow {
+    position: absolute; width: 760px; height: 760px; border-radius: 50%;
+    filter: blur(80px); opacity: .22; pointer-events: none;
+    background: radial-gradient(circle, rgba(232,106,88,.55), transparent 66%);
+  }
+
+  #minibrand {
+    position: absolute; left: 64px; top: 54px; z-index: 50;
+    display: flex; align-items: center; gap: 12px; opacity: 0;
+  }
+  #minibrand svg { width: 30px; height: 34px; }
+  #minibrand .nm { font-size: 22px; font-weight: 700; letter-spacing: .18em; }
+  #minibrand .sub { margin-left: 2px; font-family: var(--mono); font-size: 10px; letter-spacing: .2em; color: var(--muted); }
+
+  .scene {
+    position: absolute; inset: 0; opacity: 0; z-index: 10;
+    padding: 0 64px;
+  }
+  .scene-head { position: absolute; left: 64px; right: 64px; top: 176px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 15px; letter-spacing: .28em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 20px;
+  }
+  h1 { margin: 0; font-size: 104px; line-height: 1.12; letter-spacing: -.035em; font-weight: 700; }
+  h1 .accent { color: var(--accent); }
+  h2 { margin: 0; font-size: 64px; line-height: 1.16; letter-spacing: -.025em; font-weight: 650; }
+  h2 .accent { color: var(--accent); }
+  .sub { margin: 18px 0 0; font-size: 27px; line-height: 1.6; color: var(--sub); }
+
+  /* S1 */
+  #s1 { display: flex; flex-direction: column; justify-content: center; padding-top: 8px; }
+  .hero-logo { width: 132px; height: 148px; margin-bottom: 18px; }
+  .hero-name { font-size: 36px; font-weight: 700; letter-spacing: .34em; color: var(--soft); }
+  #s1 h1 { margin-top: 54px; font-size: 112px; }
+  .hero-line { margin-top: 34px; display: flex; align-items: center; gap: 16px; font-size: 28px; color: var(--sub); }
+  .hero-line i { width: 42px; height: 1px; background: var(--accent); display: block; }
+  .hero-chips { display: flex; gap: 12px; margin-top: 44px; }
+  .hero-stats { display: flex; gap: 54px; margin-top: 56px; }
+  .hero-stat b { display: block; font-family: var(--mono); font-size: 42px; font-weight: 500; color: var(--text); line-height: 1; }
+  .hero-stat span { display: block; margin-top: 8px; font-family: var(--mono); font-size: 10px; letter-spacing: .16em; color: var(--muted); }
+  .chip {
+    font-family: var(--mono); font-size: 17px; color: var(--soft);
+    border: 1px solid var(--line); background: rgba(255,255,255,.02);
+    border-radius: 8px; padding: 11px 16px;
+  }
+  .chip.on { color: var(--accent); border-color: rgba(232,106,88,.32); background: var(--accent-soft); }
+
+  /* S2 */
+  .pack-grid {
+    position: absolute; left: 64px; right: 64px; top: 420px;
+    display: flex; flex-direction: column; gap: 12px; counter-reset: pack;
+  }
+  .pack-scan {
+    position: absolute; left: -8px; right: -8px; top: 0; height: 96px;
+    border: 1px solid rgba(232,106,88,.55); border-radius: 14px;
+    background: rgba(232,106,88,.045); opacity: 0; pointer-events: none;
+    box-shadow: 0 0 34px rgba(232,106,88,.10);
+  }
+  .pack-card {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 96px; padding: 0 26px;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,.026), rgba(255,255,255,.006));
+  }
+  .pack-card::before {
+    counter-increment: pack; content: counter(pack, decimal-leading-zero);
+    width: 38px; font-family: var(--mono); font-size: 14px; color: var(--muted);
+  }
+  .pack-card .nm { font-size: 27px; font-weight: 600; letter-spacing: .01em; margin-right: auto; padding-left: 14px; }
+  .pack-card .ver { font-family: var(--mono); font-size: 15px; color: var(--muted); }
+  .pack-card.new { border-color: rgba(232,106,88,.34); background: linear-gradient(180deg, rgba(232,106,88,.11), rgba(232,106,88,.035)); }
+  .pack-card.new .ver { color: #d89a8f; }
+  .pack-card .flag {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
+    color: var(--accent); border: 1px solid rgba(232,106,88,.34);
+    border-radius: 4px; padding: 3px 6px; margin-left: 12px;
+  }
+  .pack-foot {
+    position: absolute; left: 64px; right: 64px; top: 1550px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 14px; letter-spacing: .14em; color: var(--muted);
+  }
+  .pack-foot b { color: var(--sub); font-weight: 500; }
+
+  /* S3 */
+  .editor {
+    position: absolute; left: 64px; right: 64px; top: 440px; height: 900px;
+    border: 1px solid rgba(242,230,212,.15); border-radius: 18px; overflow: hidden;
+    background: linear-gradient(180deg, rgba(26,22,17,.98), rgba(15,12,9,.99));
+    box-shadow: 0 50px 120px rgba(0,0,0,.6);
+  }
+  .win-bar {
+    height: 58px; display: flex; align-items: center; gap: 18px;
+    padding: 0 22px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.02);
+  }
+  .lights { display: flex; gap: 7px; }
+  .lights i { width: 10px; height: 10px; border-radius: 50%; background: #3a332b; display: block; }
+  .lights i:first-child { background: #7a3f37; }
+  .filetab { font-family: var(--mono); font-size: 14px; color: var(--text); background: var(--accent-soft); border: 1px solid rgba(232,106,88,.28); padding: 7px 13px; border-radius: 7px; }
+  .win-meta { margin-left: auto; font-family: var(--mono); font-size: 11px; letter-spacing: .18em; color: var(--muted); }
+  .ed-body { display: grid; grid-template-columns: 1fr 306px; height: calc(100% - 58px); }
+  .ed-code { padding: 24px 0; display: grid; grid-template-columns: 54px 1fr; font-family: var(--mono); font-size: 17px; line-height: 1.92; border-right: 1px solid var(--line); overflow: hidden; }
+  .gutter { text-align: right; padding-right: 16px; color: #4c4539; }
+  .ed-code pre { margin: 0; color: #d9d0c1; white-space: pre; }
+  .k { color: #d9878f; } .t { color: #d9b26a; } .s { color: #9fbf8a; }
+  .c { color: #6c6457; font-style: italic; } .f { color: #e8cda9; } .p { color: #8d8476; }
+  .hl { background: rgba(232,106,88,.14); box-shadow: inset 0 -1px 0 rgba(232,106,88,.42); border-radius: 4px; }
+  .outline { padding: 22px 20px; }
+  .outline-title { font-size: 15px; color: var(--soft); letter-spacing: .08em; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .outline-title span { float: right; font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .16em; }
+  .out-row { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--sub); margin-top: 16px; }
+  .out-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: .8; }
+  .out-row.child { padding-left: 18px; color: var(--muted); }
+  .out-row.child .dot { background: var(--gold); }
+  .out-row em { margin-left: auto; font-style: normal; font-size: 10px; color: #5f574a; }
+  .float-tag {
+    position: absolute; z-index: 30; display: inline-flex; align-items: center; gap: 9px;
+    font-family: var(--mono); font-size: 13px; color: var(--soft);
+    background: rgba(22,18,14,.95); border: 1px solid var(--line); border-radius: 9px;
+    padding: 10px 14px; box-shadow: 0 14px 36px rgba(0,0,0,.5);
+  }
+  .float-tag b { color: var(--accent); font-weight: 500; }
+  #tag-def { right: 64px; top: 404px; }
+  #tag-ref { left: 64px; top: 1370px; }
+  #tag-syn { right: 64px; top: 1370px; }
+
+  /* S4 */
+  .nav-grid { position: absolute; left: 64px; right: 64px; top: 420px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; height: 980px; }
+  .panel {
+    position: relative;
+    border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.006));
+    overflow: hidden;
+  }
+  .panel-note { position: absolute; left: 24px; right: 24px; bottom: 24px; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: var(--muted); border-top: 1px solid var(--line-soft); padding-top: 12px; }
+  .panel-head { padding: 20px 22px; border-bottom: 1px solid var(--line); font-size: 16px; color: var(--soft); letter-spacing: .06em; }
+  .panel-head span { float: right; font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .18em; }
+  .ref-list { padding: 10px 18px; }
+  .ref {
+    display: flex; align-items: center; gap: 10px; padding: 14px 6px; border-bottom: 1px solid var(--line-soft);
+    font-family: var(--mono); font-size: 13px; color: var(--sub);
+  }
+  .ref .k { font-style: normal; font-size: 9px; letter-spacing: .1em; padding: 3px 6px; border-radius: 4px; background: rgba(232,106,88,.12); color: #e2a39a; }
+  .ref .k.call { background: rgba(127,166,201,.12); color: #a9c6df; }
+  .ref .k.type { background: rgba(217,164,65,.10); color: #d8bc83; }
+  .ref .loc { margin-left: auto; color: #5d5548; font-size: 11px; }
+  .graph { position: relative; height: 880px; padding: 16px; }
+  .graph svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .graph .edge { fill: none; stroke: rgba(232,106,88,.42); stroke-width: 1.6; }
+  .node {
+    position: absolute; display: flex; flex-direction: column; gap: 4px;
+    padding: 12px 14px; border-radius: 9px; border: 1px solid var(--line);
+    background: rgba(19,15,12,.96); box-shadow: 0 12px 30px rgba(0,0,0,.42);
+    font-family: var(--mono); font-size: 13px; color: var(--text);
+  }
+  .node small { font-size: 9px; letter-spacing: .12em; color: var(--muted); }
+  .node.root { border-color: rgba(232,106,88,.4); background: rgba(232,106,88,.10); }
+  .node.leaf { color: var(--soft); }
+  .node .pin { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); top: 50%; }
+  .graph-foot { position: absolute; left: 24px; bottom: 26px; font-family: var(--mono); font-size: 10px; letter-spacing: .16em; color: var(--muted); }
+  .node.root .pin { right: -3px; }
+  .node.leaf .pin { left: -3px; background: var(--gold); }
+  .nav-note { position: absolute; left: 64px; right: 64px; top: 1440px; font-family: var(--mono); font-size: 13px; letter-spacing: .14em; color: var(--muted); display: flex; justify-content: space-between; }
+
+  /* S5 */
+  .rel-board { position: absolute; left: 64px; right: 64px; top: 430px; height: 1010px; }
+  .rel-code {
+    border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.02);
+    padding: 24px 26px; font-family: var(--mono); font-size: 17px; line-height: 1.8; color: #d9d0c1;
+  }
+  .rel-list { margin-top: 20px; }
+  .rel-item {
+    display: flex; align-items: center; gap: 14px; height: 78px; padding: 0 22px; margin-top: 12px;
+    border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.018);
+    font-family: var(--mono); font-size: 19px; color: var(--text);
+  }
+  .rel-item .type { font-size: 10px; letter-spacing: .08em; padding: 4px 8px; border-radius: 5px; }
+  .rel-item .type.ext { color: #e8a09a; background: rgba(232,106,88,.14); border: 1px solid rgba(232,106,88,.26); }
+  .rel-item .type.imp { color: #d8bc83; background: rgba(217,164,65,.10); border: 1px solid rgba(217,164,65,.22); }
+  .rel-item .src { margin-left: auto; font-size: 11px; color: var(--muted); }
+  .langs { position: absolute; left: 64px; right: 64px; top: 1000px; display: flex; gap: 10px; }
+  .langs .chip { font-size: 14px; padding: 9px 13px; }
+  .rel-foot { position: absolute; right: 64px; top: 1000px; font-family: var(--mono); font-size: 12px; letter-spacing: .12em; color: var(--green); }
+  .type-map { position: absolute; left: 0; right: 0; top: 610px; height: 330px; }
+  .type-map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .type-map .edge { stroke: rgba(232,106,88,.30); stroke-width: 1.4; fill: none; }
+  .tm-root {
+    position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    font-family: var(--mono); font-size: 19px; color: var(--text);
+    border: 1px solid rgba(232,106,88,.4); background: rgba(232,106,88,.10);
+    border-radius: 9px; padding: 12px 18px;
+  }
+  .tm-root small { margin-left: 10px; font-size: 10px; letter-spacing: .1em; color: var(--muted); }
+  .tm-row { position: absolute; left: 0; right: 0; top: 216px; display: flex; justify-content: space-between; }
+  .tm-chip {
+    width: 160px; padding: 13px 0; text-align: center;
+    font-family: var(--mono); font-size: 13px; color: var(--soft);
+    border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.018);
+  }
+  .tm-chip.ext { border-color: rgba(232,106,88,.30); color: #e2a39a; background: rgba(232,106,88,.08); }
+  .tm-chip.imp { border-color: rgba(217,164,65,.22); color: #d8bc83; background: rgba(217,164,65,.06); }
+  .tm-note { position: absolute; left: 0; right: 0; top: 286px; text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: .18em; color: var(--muted); }
+
+  /* S6 */
+  .diff {
+    position: absolute; left: 64px; right: 64px; top: 400px; height: 380px;
+    border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,.022), rgba(255,255,255,.005));
+  }
+  .diff-head { height: 58px; display: flex; align-items: center; gap: 16px; padding: 0 22px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .1em; }
+  .diff-head .v { padding: 5px 9px; border-radius: 5px; background: rgba(255,255,255,.04); color: var(--soft); }
+  .diff-body { padding: 16px 0; font-family: var(--mono); font-size: 15px; line-height: 1.9; }
+  .diff-line { display: flex; gap: 18px; padding: 0 24px; }
+  .diff-line .ln { width: 42px; text-align: right; color: #554d41; }
+  .diff-line.del { background: rgba(160, 70, 62, .13); color: #d9a7a0; }
+  .diff-line.add { background: rgba(96, 140, 90, .13); color: #a8c7a0; }
+  .trans {
+    position: absolute; left: 64px; right: 64px; top: 820px; height: 440px;
+    border: 1px solid rgba(127,166,201,.24); border-radius: 16px;
+    background: linear-gradient(180deg, rgba(127,166,201,.07), rgba(255,255,255,.006));
+    padding: 28px 30px;
+  }
+  .trans-head { display: flex; align-items: center; justify-content: space-between; font-size: 17px; color: #b9d0e2; }
+  .trans-head span { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; color: #70889b; }
+  .trans-en { margin-top: 28px; font-family: var(--mono); font-size: 18px; line-height: 1.6; color: var(--soft); }
+  .trans-arrow { margin: 16px 0; font-family: var(--mono); font-size: 12px; letter-spacing: .18em; color: #6f8799; }
+  .trans-zh { font-size: 27px; line-height: 1.55; color: var(--text); }
+  .trans-zh b { color: #a9c6df; font-weight: 500; }
+  .trans-foot { position: absolute; left: 30px; right: 30px; bottom: 22px; display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: #70889b; }
+  .pipeline {
+    position: absolute; left: 64px; right: 64px; top: 1320px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 22px; border: 1px solid var(--line); border-radius: 14px;
+    background: rgba(255,255,255,.016);
+  }
+  .pipe-node {
+    flex: 1; text-align: center; padding: 12px 8px;
+    border: 1px solid var(--line-soft); border-radius: 8px;
+    background: rgba(255,255,255,.02);
+  }
+  .pipe-node b { display: block; font-family: var(--mono); font-size: 14px; color: var(--text); font-weight: 500; }
+  .pipe-node small { display: block; margin-top: 5px; font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--muted); }
+  .pipe-node.on { border-color: rgba(127,166,201,.30); background: rgba(127,166,201,.08); }
+  .pipe-node.on b { color: #b9d0e2; }
+  .pipe-arrow { font-family: var(--mono); font-size: 15px; color: var(--accent); }
+
+  #s4 .ed-code { font-size: 14.5px; line-height: 1.9; }
+  #s4 .ed-body { height: calc(100% - 92px); }
+
+  /* S7 */
+  #s10 { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  #s10 .logo { width: 128px; height: 144px; }
+  #s10 .nm { margin-top: 18px; font-size: 30px; letter-spacing: .32em; color: var(--soft); font-weight: 700; }
+  #s10 h1 { margin-top: 52px; font-size: 86px; text-align: center; }
+  #s10 .lead { margin-top: 30px; font-size: 29px; color: var(--sub); letter-spacing: .06em; }
+  .stats { display: flex; gap: 14px; margin-top: 60px; }
+  .stat { width: 190px; padding: 20px 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.018); }
+  .stat b { display: block; font-family: var(--mono); font-size: 30px; color: var(--text); }
+  .stat span { display: block; margin-top: 6px; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; color: var(--muted); }
+  .repo { margin-top: 58px; font-family: var(--mono); font-size: 20px; color: var(--text); letter-spacing: .02em; }
+  .repo-foot { margin-top: 14px; font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--muted); }
+  .s7-glow { position: absolute; width: 900px; height: 900px; border-radius: 50%; top: 480px; left: 90px; filter: blur(90px); opacity: .18; background: radial-gradient(circle, rgba(232,106,88,.6), transparent 68%); }
+
+  /* Library */
+  .library-shot { position: absolute; left: 110px; right: 110px; top: 430px; }
+  .library-mock {
+    border: 1px solid rgba(60,48,36,.18); border-radius: 16px; overflow: hidden;
+    background: #f3efe6; color: #2b241c;
+    box-shadow: 0 44px 110px rgba(0,0,0,.58);
+  }
+  .lib-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid rgba(60,48,36,.14); }
+  .lib-head b { display: block; font-size: 20px; font-weight: 700; letter-spacing: .02em; }
+  .lib-head span { display: block; margin-top: 3px; font-size: 11px; color: #8b7e6d; letter-spacing: .04em; }
+  .lib-head .esc { font-family: var(--mono); font-size: 10px; color: #8b7e6d; border: 1px solid rgba(60,48,36,.16); border-radius: 4px; padding: 3px 7px; }
+  .lib-list { padding: 10px 14px; display: grid; gap: 7px; }
+  .lib-row { display: flex; align-items: center; gap: 13px; height: 52px; padding: 0 12px; border: 1px solid rgba(60,48,36,.10); border-radius: 8px; background: #fffdf8; }
+  .lib-row.active { background: #eef4e9; border-color: rgba(96,132,86,.30); }
+  .lib-icon { flex: 0 0 32px; height: 32px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 600; color: #fff; }
+  .ic-java { background: #b5563f; } .ic-c { background: #527d6a; } .ic-ts { background: #3f6f9c; }
+  .ic-js { background: #b08a2e; } .ic-py { background: #4d6f8a; } .ic-rust { background: #8a5a3a; }
+  .ic-sql { background: #6d6557; }
+  .lib-copy { flex: 1; min-width: 0; }
+  .lib-copy b { font-size: 14px; font-weight: 650; }
+  .lib-copy b em { font-style: normal; margin-left: 7px; font-family: var(--mono); font-size: 10px; font-weight: 500; color: #7a6d5d; background: #eee8dc; border-radius: 4px; padding: 2px 5px; }
+  .lib-copy span { display: block; margin-top: 2px; font-size: 10.5px; color: #8b7e6d; }
+  .lib-actions { display: flex; gap: 7px; }
+  .lib-btn { font-size: 10.5px; color: #6f6355; padding: 4px 9px; border-radius: 5px; border: 1px solid rgba(60,48,36,.14); }
+  .lib-btn.on { color: #3f6b3a; border-color: rgba(96,132,86,.32); background: #e3eddc; }
+  .lib-current { font-size: 10.5px; color: #3f6b3a; letter-spacing: .08em; }
+  .lib-foot { display: flex; align-items: center; justify-content: space-between; padding: 13px 22px; border-top: 1px solid rgba(60,48,36,.12); background: #ece6da; }
+  .lib-import { font-size: 11.5px; color: #3f6b3a; border: 1px solid rgba(96,132,86,.30); border-radius: 6px; padding: 6px 10px; }
+  .lib-foot > span:last-child { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; color: #8b7e6d; }
+  .library-points { position: absolute; left: 64px; right: 64px; top: 1218px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .point { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.018); padding: 22px 20px; }
+  .point b { display: block; font-size: 20px; font-weight: 600; color: var(--text); }
+  .point span { display: block; margin-top: 8px; font-size: 13px; line-height: 1.55; color: var(--muted); }
+
+  /* Full interface */
+  .ed-body { grid-template-columns: 196px 1fr 248px; }
+  .filetree { border-right: 1px solid var(--line); padding: 18px 0; overflow: hidden; background: rgba(0,0,0,.12); }
+  .tree-head { padding: 0 16px 14px; border-bottom: 1px solid var(--line-soft); font-size: 13px; color: var(--soft); }
+  .tree-head span { float: right; font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .16em; }
+  .tree-pack { margin: 14px 16px 8px; display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .tree-pack em { font-style: normal; color: var(--muted); }
+  .tree-row { padding: 7px 16px; font-family: var(--mono); font-size: 11.5px; color: var(--sub); white-space: nowrap; overflow: hidden; }
+  .tree-row.lvl1 { padding-left: 28px; }
+  .tree-row.lvl2 { padding-left: 42px; color: var(--muted); }
+  .tree-row.lvl2.active { color: var(--text); background: rgba(232,106,88,.12); border-right: 2px solid var(--accent); }
+  .status-bar {
+    height: 34px; display: flex; align-items: center; gap: 18px; padding: 0 18px;
+    border-top: 1px solid var(--line); background: rgba(255,255,255,.025);
+    font-family: var(--mono); font-size: 10px; letter-spacing: .09em; color: var(--muted);
+  }
+  .status-bar .grow { flex: 1; }
+  .status-bar .ok { color: var(--green); }
+
+  /* Themes */
+  .theme-grid { position: absolute; left: 64px; right: 64px; top: 388px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .theme-card { border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.02); padding: 10px; transition: none; }
+  .theme-card.scan { border-color: rgba(232,106,88,.55); box-shadow: 0 0 0 1px rgba(232,106,88,.16), 0 18px 50px rgba(0,0,0,.35); }
+  .theme-card img { display: block; width: 100%; border-radius: 8px; }
+  .theme-label { display: flex; align-items: baseline; justify-content: space-between; padding: 12px 6px 4px; }
+  .theme-label b { font-size: 17px; font-weight: 600; }
+  .theme-label span { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: var(--muted); }
+  .theme-note { position: absolute; left: 64px; right: 64px; top: 1130px; display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--muted); }
+
+  /* Diff summary */
+  .symbol-summary { position: absolute; left: 64px; right: 64px; top: 830px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.018); padding: 24px 26px; }
+  .sum-head { font-size: 16px; color: var(--soft); padding-bottom: 16px; border-bottom: 1px solid var(--line-soft); }
+  .sum-head span { float: right; font-family: var(--mono); font-size: 10px; letter-spacing: .16em; color: var(--muted); }
+  .sum-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
+  .sum-item { border: 1px solid var(--line-soft); border-radius: 10px; padding: 18px; background: rgba(0,0,0,.12); }
+  .sum-item b { display: block; font-family: var(--mono); font-size: 24px; font-weight: 500; }
+  .sum-item strong { display: block; margin-top: 6px; font-size: 16px; font-weight: 600; }
+  .sum-item small { display: block; margin-top: 5px; font-size: 11px; color: var(--muted); }
+  .sum-item.plus b { color: var(--green); }
+  .sum-item.minus b { color: #d9878f; }
+  .sum-item.changed b { color: var(--gold); }
+  .version-compare { position: absolute; left: 64px; right: 64px; top: 1210px; display: flex; align-items: center; gap: 16px; }
+  .ver-box { flex: 1; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.018); padding: 22px 24px; }
+  .ver-box small { display: block; font-family: var(--mono); font-size: 9px; letter-spacing: .16em; color: var(--muted); }
+  .ver-box b { display: block; margin-top: 8px; font-family: var(--mono); font-size: 22px; color: var(--text); font-weight: 500; }
+  .ver-arrow { font-family: var(--mono); font-size: 20px; color: var(--accent); }
+  .ver-note { position: absolute; left: 64px; right: 64px; top: 1380px; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--muted); display: flex; justify-content: space-between; }
+
+  /* Translation scene */
+  .trans-shot { position: absolute; left: 110px; right: 110px; top: 442px; }
+  .trans-chips { position: absolute; left: 64px; right: 64px; top: 1206px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .trans-chips .chip { font-size: 13px; padding: 9px 12px; }
+
+  /* ===== 1920 x 1080 landscape overrides ===== */
+  #minibrand { left: 72px; top: 44px; }
+  .scene { padding: 0 88px; }
+  .scene-head { left: 88px; right: 88px; top: 104px; }
+  .eyebrow { font-size: 14px; margin-bottom: 14px; }
+  h1 { font-size: 96px; }
+  h2 { font-size: 60px; }
+  .sub { font-size: 23px; margin-top: 14px; }
+
+  #s1 { padding-top: 24px; }
+  .hero-logo { width: 104px; height: 116px; margin-bottom: 12px; }
+  .hero-name { font-size: 28px; }
+  #s1 h1 { margin-top: 30px; font-size: 100px; }
+  .hero-line { margin-top: 22px; font-size: 23px; }
+  .hero-chips { margin-top: 26px; }
+  .hero-stats { margin-top: 34px; gap: 46px; }
+  .hero-stat b { font-size: 34px; }
+  .hero-visual { position: absolute; right: 140px; top: 150px; width: 640px; height: 640px; display: flex; align-items: center; justify-content: center; }
+  .hv-ring { position: absolute; inset: 20px; border: 1px solid rgba(232,106,88,.16); border-radius: 50%; }
+  .hv-ring.inner { inset: 96px; border-color: rgba(232,106,88,.22); }
+  .hv-logo { width: 300px; height: 340px; opacity: .55; filter: drop-shadow(0 0 50px rgba(232,106,88,.18)); }
+  .hv-label { position: absolute; left: 0; right: 0; bottom: 34px; text-align: center; font-family: var(--mono); font-size: 10px; letter-spacing: .24em; color: var(--muted); }
+
+  #s2 .pack-grid { top: 300px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  #s2 .pack-card { position: relative; height: 210px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 10px; padding: 20px 22px; }
+  #s2 .pack-card::before { position: absolute; top: 16px; right: 18px; width: auto; }
+  #s2 .pack-card .nm { margin: 0; padding: 0; font-size: 26px; }
+  #s2 .pack-card .ver { font-size: 14px; }
+  #s2 .pack-scan { display: none; }
+  .pack-foot { top: 830px; }
+
+  #s3 .scene-head { width: 620px; }
+  #s3 h2 { font-size: 54px; }
+  .library-shot { left: 730px; right: 88px; top: 250px; }
+  .library-mock .lib-head { padding: 13px 20px; }
+  .library-mock .lib-list { padding: 8px 12px; gap: 5px; }
+  .library-mock .lib-row { height: 44px; padding: 0 10px; }
+  .library-mock .lib-icon { flex-basis: 28px; height: 28px; }
+  .library-mock .lib-copy b { font-size: 13px; }
+  .library-mock .lib-copy span { font-size: 9.5px; }
+  .library-mock .lib-foot { padding: 9px 18px; }
+  .library-points { left: 88px; right: auto; top: 390px; width: 560px; grid-template-columns: 1fr; gap: 12px; }
+  .library-points .point { padding: 15px 18px; }
+  .library-points .point b { font-size: 18px; }
+  .library-points .point span { font-size: 12px; }
+
+  #s4 .scene-head { top: 90px; }
+  #s4 .editor { left: 88px; right: 88px; top: 248px; height: 640px; }
+  #s4 .ed-body { grid-template-columns: 240px 1fr 300px; height: calc(100% - 92px); }
+  #s4 .ed-code { font-size: 13.5px; line-height: 1.8; padding: 18px 0; }
+  #tag-def { right: 88px; top: 214px; }
+  #tag-ref { left: 88px; top: 910px; }
+  #tag-syn { right: 88px; top: 910px; }
+
+  #s5 .scene-head { width: 560px; top: 200px; }
+  #s5 h2 { font-size: 52px; }
+  .theme-grid { left: 700px; right: 88px; top: 220px; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .theme-card { padding: 8px; }
+  .theme-label { padding: 9px 4px 2px; }
+  .theme-label b { font-size: 15px; }
+  .theme-note { left: 88px; right: auto; top: 770px; width: 540px; flex-direction: column; align-items: flex-start; gap: 12px; }
+
+  .nav-grid { top: 250px; height: 650px; gap: 18px; }
+  .panel-head { padding: 16px 20px; }
+  .ref { padding: 10px 6px; font-size: 12px; }
+  .graph { transform: none; width: 100%; height: 590px; }
+  .nav-note { top: 940px; }
+
+  .rel-board { top: 250px; height: 760px; }
+  .rel-code { position: absolute; left: 0; top: 0; width: 840px; font-size: 16px; }
+  .rel-list { position: absolute; left: 880px; right: 0; top: 0; }
+  .rel-item { height: 64px; font-size: 17px; margin-top: 9px; }
+  .type-map { left: 0; top: 230px; width: 840px; height: 330px; }
+  .langs { left: 0; top: 600px; }
+  .rel-foot { right: 0; top: 604px; }
+
+  #s8 .diff { left: 88px; right: auto; width: 1040px; top: 270px; height: 520px; }
+  .symbol-summary { left: 1160px; right: 88px; top: 270px; }
+  .version-compare { left: 1160px; right: 88px; top: 680px; }
+  .ver-note { left: 1160px; right: 88px; top: 840px; }
+
+  .trans-shot { left: 88px; right: auto; width: 820px; top: 260px; }
+  .trans-chips { left: 960px; right: 88px; top: 320px; }
+  .pipeline { left: 960px; right: 88px; top: 560px; }
+
+  #s10 .logo { width: 150px; height: 170px; }
+  #s10 .nm { font-size: 32px; }
+  #s10 h1 { font-size: 100px; margin-top: 34px; }
+  #s10 .lead { font-size: 27px; margin-top: 20px; }
+  #s10 .stats { margin-top: 36px; gap: 18px; }
+  #s10 .stat { width: 220px; }
+  #s10 .repo { margin-top: 34px; }
+  #s10 .s7-glow { top: 200px; left: 510px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg-base"></div>
+  <div class="bg-grid"></div>
+  <div class="glow" id="drift-glow"></div>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+
+  <div id="minibrand">
+    <svg viewBox="0 0 60 68" fill="none">
+      <path d="M30 3 55 17.5v33L30 65 5 50.5v-33L30 3Z" stroke="#e86a58" stroke-width="2.6"/>
+      <path d="M30 3v29m0 0L5 17.5M30 32l25-14.5M30 32v33" stroke="#e86a58" stroke-width="1.5" opacity=".7"/>
+    </svg>
+    <span class="nm">LATTICE</span>
+    <span class="sub">OFFLINE SOURCE READER</span>
+  </div>
+
+  <section class="scene" id="s1">
+    <svg class="hero-logo" viewBox="0 0 60 68" fill="none">
+      <path d="M30 3 55 17.5v33L30 65 5 50.5v-33L30 3Z" stroke="#e86a58" stroke-width="2.2"/>
+      <path d="M30 3v29m0 0L5 17.5M30 32l25-14.5M30 32v33" stroke="#e86a58" stroke-width="1.3" opacity=".72"/>
+      <path d="m5 17.5 25 14.5 25-14.5M30 65V32" stroke="#e86a58" stroke-width="1" opacity=".42"/>
+    </svg>
+    <div class="hero-name" data-at=".25">LATTICE</div>
+    <h1 data-at=".55">读懂真实源码<br><span class="accent">不离开本机</span></h1>
+    <div class="hero-line" data-at="1.5"><i></i> 离线 · 只读 · 多语言</div>
+    <div class="hero-chips" data-at="2.1">
+      <span class="chip on">NO NETWORK</span>
+      <span class="chip">READ ONLY</span>
+      <span class="chip">10 SOURCE PACKS</span>
+    </div>
+    <div class="hero-stats" data-at="4.4">
+      <div class="hero-stat"><b>10</b><span>SOURCE PACKS</span></div>
+      <div class="hero-stat"><b>6</b><span>LANGUAGES</span></div>
+      <div class="hero-stat"><b>0</b><span>NETWORK</span></div>
+    </div>
+    <div class="hero-visual" data-at="2.6">
+      <div class="hv-ring"></div>
+      <div class="hv-ring inner"></div>
+      <svg class="hv-logo" viewBox="0 0 60 68" fill="none">
+        <path d="M30 3 55 17.5v33L30 65 5 50.5v-33L30 3Z" stroke="#e86a58" stroke-width="1.4"/>
+        <path d="M30 3v29m0 0L5 17.5M30 32l25-14.5M30 32v33" stroke="#e86a58" stroke-width="1" opacity=".7"/>
+        <path d="m5 17.5 25 14.5 25-14.5M30 65V32" stroke="#e86a58" stroke-width=".8" opacity=".42"/>
+      </svg>
+      <div class="hv-label">SOURCE · TRACE · UNDERSTAND</div>
+    </div>
+  </section>
+
+  <section class="scene" id="s2">
+    <div class="scene-head">
+      <div class="eyebrow" data-at=".2">SOURCE PACKS · 2026</div>
+      <h2 data-at=".4">十套真实源码包</h2>
+      <p class="sub" data-at=".8">从语言实现到主流框架，固定版本，随时切换。</p>
+    </div>
+    <div class="pack-grid">
+      <div class="pack-scan"></div>
+      <div class="pack-card" data-at=".9"><span class="nm">CPython</span><span class="ver">3.13.2</span></div>
+      <div class="pack-card" data-at="1.0"><span class="nm">OpenJDK</span><span class="ver">27</span></div>
+      <div class="pack-card" data-at="1.1"><span class="nm">Rust</span><span class="ver">1.99.1</span></div>
+      <div class="pack-card" data-at="1.2"><span class="nm">TypeScript</span><span class="ver">7.0.2</span></div>
+      <div class="pack-card" data-at="1.3"><span class="nm">SQLite</span><span class="ver">3.54.1</span></div>
+      <div class="pack-card new" data-at="1.4"><span class="nm">Nginx <span class="flag">NEW</span></span><span class="ver">1.31.8</span></div>
+      <div class="pack-card new" data-at="1.5"><span class="nm">Spring Boot <span class="flag">NEW</span></span><span class="ver">4.1.2</span></div>
+      <div class="pack-card new" data-at="1.6"><span class="nm">Vue <span class="flag">NEW</span></span><span class="ver">3.5.44</span></div>
+      <div class="pack-card new" data-at="1.7"><span class="nm">React <span class="flag">NEW</span></span><span class="ver">19.3.1</span></div>
+      <div class="pack-card" data-at="1.8"><span class="nm">SQLite</span><span class="ver">3.50.4</span></div>
+    </div>
+    <div class="pack-foot" data-at="2.3">
+      <span><b>FIXED TAG</b> · 不可变 · 只读</span>
+      <span>4 NEW PACKS · 2026</span>
+    </div>
+  </section>
+
+  <section class="scene" id="s3">
+    <div class="scene-head">
+      <div class="eyebrow" data-at=".2">LIBRARY · SOURCE PACKS</div>
+      <h2 data-at=".4">源码包，<span class="accent">像书一样管理</span></h2>
+      <p class="sub" data-at=".8">目录 / ZIP 导入 · 校验和 · 多版本并存</p>
+    </div>
+    <div class="library-shot" data-at="1.0" data-y="30">
+      <div class="library-mock">
+        <div class="lib-head">
+          <div><b>本地源码书库</b><span>已发现 10 个源码包</span></div>
+          <span class="esc">Esc</span>
+        </div>
+        <div class="lib-list">
+          <div class="lib-row"><span class="lib-icon ic-java">Sp</span><div class="lib-copy"><b>Spring Boot <em>v4.1.2</em></b><span>Java · Java 源码 · 3,308 文件</span></div><div class="lib-actions"><span class="lib-btn">卸载</span><span class="lib-btn on">切换</span></div></div>
+          <div class="lib-row"><span class="lib-icon ic-c">Nx</span><div class="lib-copy"><b>Nginx <em>v1.31.8</em></b><span>C · C 源码 · 425 文件</span></div><div class="lib-actions"><span class="lib-btn">卸载</span><span class="lib-btn on">切换</span></div></div>
+          <div class="lib-row"><span class="lib-icon ic-ts">Vu</span><div class="lib-copy"><b>Vue <em>v3.5.44</em></b><span>TypeScript · TypeScript 源码 · 236 文件</span></div><div class="lib-actions"><span class="lib-btn">卸载</span><span class="lib-btn on">切换</span></div></div>
+          <div class="lib-row"><span class="lib-icon ic-js">Re</span><div class="lib-copy"><b>React <em>v19.3.1</em></b><span>JavaScript · JavaScript 源码 · 765 文件</span></div><div class="lib-actions"><span class="lib-btn">卸载</span><span class="lib-btn on">切换</span></div></div>
+          <div class="lib-row active"><span class="lib-icon ic-java">Jv</span><div class="lib-copy"><b>OpenJDK <em>v27</em></b><span>Java · Java 源码 · java.base</span></div><span class="lib-current">当前</span></div>
+          <div class="lib-row"><span class="lib-icon ic-py">Py</span><div class="lib-copy"><b>CPython <em>v3.13.2</em></b><span>Python · C 源码 · 4,885 文件</span></div><div class="lib-actions"><span class="lib-btn">卸载</span><span class="lib-btn on">切换</span></div></div>
+          <div class="lib-row"><span class="lib-icon ic-rust">Rs</span><div class="lib-copy"><b>Rust <em>v1.99.1</em></b><span>Rust · Rust 源码 · 18,237 文件</span></div><div class="lib-actions"><span class="lib-btn">卸载</span><span class="lib-btn on">切换</span></div></div>
+          <div class="lib-row"><span class="lib-icon ic-ts">Ts</span><div class="lib-copy"><b>TypeScript <em>v7.0.2</em></b><span>TypeScript · TypeScript 源码 · 747 文件</span></div><div class="lib-actions"><span class="lib-btn">卸载</span><span class="lib-btn on">切换</span></div></div>
+          <div class="lib-row"><span class="lib-icon ic-sql">Sq</span><div class="lib-copy"><b>SQLite <em>v3.54.1</em></b><span>C · C 源码 · 2,287 文件</span></div><div class="lib-actions"><span class="lib-btn">卸载</span><span class="lib-btn on">切换</span></div></div>
+          <div class="lib-row"><span class="lib-icon ic-sql">Sq</span><div class="lib-copy"><b>SQLite <em>v3.50.4</em></b><span>C · C 源码 · 2,208 文件</span></div><div class="lib-actions"><span class="lib-btn">卸载</span><span class="lib-btn on">切换</span></div></div>
+        </div>
+        <div class="lib-foot"><span class="lib-import">＋ 导入源码包</span><span>只读 · 离线 · CRC32</span></div>
+      </div>
+    </div>
+    <div class="library-points">
+      <div class="point" data-at="1.9" data-y="18"><b>目录 / ZIP 导入</b><span>拒绝绝对路径与目录穿越，逐条校验 CRC</span></div>
+      <div class="point" data-at="2.2" data-y="18"><b>多版本并存</b><span>同一实现的不同版本独立安装，用于跨版本 Diff</span></div>
+      <div class="point" data-at="2.5" data-y="18"><b>只读与卸载</b><span>源码包不可变；卸载只删除 .content 内的目标目录</span></div>
+    </div>
+  </section>
+
+  <section class="scene" id="s4">
+    <div class="scene-head">
+      <div class="eyebrow" data-at=".2">INTERFACE · READ</div>
+      <h2 data-at=".4">一块屏幕，完整阅读</h2>
+      <p class="sub" data-at=".8">文件树、多标签、代码视图与关系面板，在同一个窗口里。</p>
+    </div>
+    <div class="editor" data-at=".7" data-y="36">
+      <div class="win-bar">
+        <div class="lights"><i></i><i></i><i></i></div>
+        <div class="filetab">ArrayList.java</div>
+        <div class="win-meta">OPENJDK 27 · READ ONLY</div>
+      </div>
+      <div class="ed-body">
+        <aside class="filetree">
+          <div class="tree-head">源码树 <span>FILES</span></div>
+          <div class="tree-pack">OpenJDK <em>27</em></div>
+          <div class="tree-row">▾ java.base</div>
+          <div class="tree-row lvl1">▾ java.util</div>
+          <div class="tree-row lvl2 active">ArrayList.java</div>
+          <div class="tree-row lvl2">AbstractList.java</div>
+          <div class="tree-row lvl2">List.java</div>
+          <div class="tree-row lvl2">RandomAccess.java</div>
+          <div class="tree-row lvl1">▾ java.lang</div>
+          <div class="tree-row lvl2">Object.java</div>
+          <div class="tree-row lvl2">String.java</div>
+          <div class="tree-row">▾ java.io</div>
+          <div class="tree-row lvl2">Serializable.java</div>
+        </aside>
+        <div class="ed-code">
+          <div class="gutter"><div>412</div><div>413</div><div>414</div><div>415</div><div>416</div><div>417</div><div>418</div><div>419</div><div>420</div><div>421</div><div>422</div><div>423</div><div>424</div><div>425</div><div>426</div><div>427</div><div>428</div><div>429</div><div>430</div><div>431</div><div>432</div></div>
+          <pre><div class="code-line"><span class="c">// OpenJDK 27 · java.base</span></div><div class="code-line"><span class="k">public class</span> <span class="t">ArrayList</span><span class="p">&lt;E&gt;</span> <span class="k">extends</span> <span class="t">AbstractList</span><span class="p">&lt;E&gt;</span></div><div class="code-line">        <span class="k">implements</span> <span class="t">List</span><span class="p">&lt;E&gt;,</span> <span class="t">RandomAccess</span><span class="p">,</span></div><div class="code-line">        <span class="t">Cloneable</span><span class="p">,</span> <span class="t">java.io.Serializable</span> <span class="p">{</span></div><div class="code-line">    <span class="k">private static final int</span> <span class="n">DEFAULT_CAPACITY</span> <span class="p">=</span> <span class="s">10</span><span class="p">;</span></div><div class="code-line">    <span class="k">private static final</span> <span class="t">Object</span><span class="p">[]</span> <span class="n">EMPTY</span> <span class="p">= {};</span></div><div class="code-line"></div><div class="code-line">    <span class="k">transient</span> <span class="t">Object</span><span class="p">[]</span> <span class="n">elementData</span><span class="p">;</span></div><div class="code-line">    <span class="k">private int</span> <span class="n">size</span><span class="p">;</span></div><div class="code-line"></div><div class="code-line">    <span class="k">public</span> <span class="f">ArrayList</span><span class="p">() {</span></div><div class="code-line">        <span class="k">this</span><span class="p">.</span><span class="n">elementData</span> <span class="p">=</span> <span class="n">EMPTY</span><span class="p">;</span></div><div class="code-line">    <span class="p">}</span></div><div class="code-line"></div><div class="code-line">    <span class="k">public boolean</span> <span class="f">add</span><span class="p">(</span><span class="t">E</span> <span class="n">e</span><span class="p">) {</span></div><div class="code-line">        <span class="n">modCount</span><span class="p">++;</span></div><div class="code-line">        <span class="k">if</span> <span class="p">(</span><span class="n">size</span> <span class="p">==</span> <span class="n">elementData</span><span class="p">.</span><span class="n">length</span><span class="p">)</span></div><div class="code-line">            <span class="n">elementData</span> <span class="p">=</span> <span class="f">grow</span><span class="p">();</span></div><div class="code-line">        <span class="n">elementData</span><span class="p">[</span><span class="n">size</span><span class="p">++]</span> <span class="p">=</span> <span class="n">e</span><span class="p">;</span></div><div class="code-line">        <span class="k">return true</span><span class="p">;</span></div><div class="code-line">    <span class="p">}</span></div></pre>
+        </div>
+        <aside class="outline">
+          <div class="outline-title">大纲 <span>OUTLINE</span></div>
+          <div class="out-row"><span class="dot"></span>ArrayList <em>class</em></div>
+          <div class="out-row child"><span class="dot"></span>DEFAULT_CAPACITY</div>
+          <div class="out-row child"><span class="dot"></span>elementData</div>
+          <div class="out-row child"><span class="dot"></span>size</div>
+          <div class="out-row child"><span class="dot"></span>ArrayList()</div>
+          <div class="out-row child"><span class="dot"></span>add(E)</div>
+          <div class="out-row child"><span class="dot"></span>grow()</div>
+          <div class="out-row"><span class="dot"></span>AbstractList <em>extends</em></div>
+          <div class="out-row child"><span class="dot"></span>modCount</div>
+        </aside>
+      </div>
+      <div class="status-bar">
+        <span class="ok">● 源码已载入</span>
+        <span>OpenJDK 27</span>
+        <span>Java</span>
+        <span>1,568 lines</span>
+        <span class="grow"></span>
+        <span>UTF-8</span>
+        <span>100%</span>
+        <span>只读</span>
+      </div>
+    </div>
+    <div class="float-tag" id="tag-def" data-at="2.2"><b>⌘</b> 双击跳转定义</div>
+    <div class="float-tag" id="tag-ref" data-at="2.8"><b>42</b> 处引用已索引</div>
+    <div class="float-tag" id="tag-syn" data-at="3.1">tree-sitter · 语义解析</div>
+  </section>
+
+  <section class="scene" id="s5">
+    <div class="scene-head">
+      <div class="eyebrow" data-at=".2">THEMES · FOUR MOODS</div>
+      <h2 data-at=".4">四套主题，<span class="accent">换一种呼吸</span></h2>
+      <p class="sub" data-at=".8">界面、代码和图标一起切换，主题也适配 80%–200% 缩放。</p>
+    </div>
+    <div class="theme-grid">
+      <div class="theme-card" data-at="1.0" data-y="24"><img src="assets/theme-wuwei-dark.png" alt="无为暗色主题"><div class="theme-label"><b>无为 · 暗</b><span>WUWEI DARK</span></div></div>
+      <div class="theme-card" data-at="1.2" data-y="24"><img src="assets/theme-wuwei-light.png" alt="无为纸色主题"><div class="theme-label"><b>无为 · 纸</b><span>WUWEI LIGHT</span></div></div>
+      <div class="theme-card" data-at="1.4" data-y="24"><img src="assets/theme-matrix-dark.png" alt="矩阵暗色主题"><div class="theme-label"><b>矩阵 · 暗</b><span>MATRIX DARK</span></div></div>
+      <div class="theme-card" data-at="1.6" data-y="24"><img src="assets/theme-matrix-light.png" alt="矩阵浅色主题"><div class="theme-label"><b>矩阵 · 浅</b><span>MATRIX LIGHT</span></div></div>
+    </div>
+    <div class="theme-note" data-at="2.4">
+      <span>四套内置主题 · 无外部主题包</span>
+      <span>80% – 200% GLOBAL ZOOM</span>
+    </div>
+  </section>
+
+  <section class="scene" id="s6">
+    <div class="scene-head">
+      <div class="eyebrow" data-at=".2">NAVIGATE · TRACE</div>
+      <h2 data-at=".4">定义 · 引用 · 调用链</h2>
+      <p class="sub" data-at=".8">顺着代码，看清来龙去脉。</p>
+    </div>
+    <div class="nav-grid">
+      <div class="panel" data-at="1.0" data-y="30">
+        <div class="panel-head">引用 <span>REFERENCES</span></div>
+        <div class="ref-list">
+          <div class="ref"><span class="k">定义</span>ArrayList.java<span class="loc">412</span></div>
+          <div class="ref"><span class="k call">调用</span>ArrayListTest.java<span class="loc">86</span></div>
+          <div class="ref"><span class="k type">类型</span>Collections.java<span class="loc">1024</span></div>
+          <div class="ref"><span class="k call">调用</span>Arrays.java<span class="loc">318</span></div>
+          <div class="ref"><span class="k">引用</span>List.of.java<span class="loc">77</span></div>
+          <div class="ref"><span class="k call">调用</span>ArrayList.java<span class="loc">428</span></div>
+          <div class="ref"><span class="k type">类型</span>Serialization.java<span class="loc">204</span></div>
+          <div class="ref"><span class="k">引用</span>AbstractList.java<span class="loc">102</span></div>
+          <div class="ref"><span class="k type">类型</span>Vector.java<span class="loc">88</span></div>
+          <div class="ref"><span class="k call">调用</span>LinkedList.java<span class="loc">214</span></div>
+          <div class="ref"><span class="k">引用</span>SubList.java<span class="loc">119</span></div>
+        </div>
+        <div class="panel-note">语义扫描 · 排除注释、字符串与条件编译噪声</div>
+      </div>
+      <div class="panel" data-at="1.4" data-y="30">
+        <div class="panel-head">调用链 <span>CALL TREE</span></div>
+        <div class="graph">
+          <svg viewBox="0 0 780 560" preserveAspectRatio="none">
+            <path class="edge" data-at="1.9" d="M250 278 C 330 278, 330 108, 420 108"/>
+            <path class="edge" data-at="2.1" d="M250 278 C 330 278, 330 278, 420 278"/>
+            <path class="edge" data-at="2.3" d="M250 278 C 330 278, 330 448, 420 448"/>
+          </svg>
+          <div class="node root" style="left:30px; top:250px">add(E)<small>ArrayList.java:427</small><span class="pin"></span></div>
+          <div class="node leaf" style="left:420px; top:80px">grow()<small>ArrayList.java:455</small><span class="pin"></span></div>
+          <div class="node leaf" style="left:420px; top:250px">ensureCapacity()<small>ArrayList.java:221</small><span class="pin"></span></div>
+          <div class="node leaf" style="left:420px; top:420px">modCount++<small>AbstractList.java:620</small><span class="pin"></span></div>
+          <div class="graph-foot">CALL DEPTH 3 · SEMANTIC</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-note" data-at="2.4">
+      <span>57,448 SYMBOLS · INSTANT LOOKUP</span>
+      <span>FORWARD · REVERSE · DEPENDENCY</span>
+    </div>
+  </section>
+
+  <section class="scene" id="s7">
+    <div class="scene-head">
+      <div class="eyebrow" data-at=".2">RELATIONS · TYPES</div>
+      <h2 data-at=".4">继承与实现，<span class="accent">跨文件汇总</span></h2>
+    </div>
+    <div class="rel-board">
+      <div class="rel-code" data-at=".9">
+        <span class="c">// 直接声明即可解析，不做猜测</span><br>
+        <span class="k">public class</span> <span class="t">ArrayList</span>&lt;E&gt; <span class="k">extends</span> <span class="t">AbstractList</span>&lt;E&gt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">implements</span> <span class="t">List</span>&lt;E&gt;, <span class="t">RandomAccess</span>, <span class="t">Cloneable</span>
+      </div>
+      <div class="rel-list">
+        <div class="rel-item" data-at="1.3"><span class="type ext">继承</span>AbstractList<span class="src">AbstractList.java:104</span></div>
+        <div class="rel-item" data-at="1.5"><span class="type imp">实现</span>List<span class="src">List.java:51</span></div>
+        <div class="rel-item" data-at="1.7"><span class="type imp">实现</span>RandomAccess<span class="src">RandomAccess.java:32</span></div>
+        <div class="rel-item" data-at="1.9"><span class="type imp">实现</span>Cloneable<span class="src">Cloneable.java:28</span></div>
+        <div class="rel-item" data-at="2.1"><span class="type imp">实现</span>Serializable<span class="src">Serializable.java:31</span></div>
+      </div>
+      <div class="type-map" data-at="2.5" data-y="18">
+        <svg viewBox="0 0 952 330" preserveAspectRatio="none">
+          <path class="edge" d="M476 58 V120 H80 V208"/>
+          <path class="edge" d="M476 120 H278 V208"/>
+          <path class="edge" d="M476 120 V208"/>
+          <path class="edge" d="M476 120 H674 V208"/>
+          <path class="edge" d="M476 120 H872 V208"/>
+        </svg>
+        <div class="tm-root">ArrayList&lt;E&gt;<small>当前类型</small></div>
+        <div class="tm-row">
+          <span class="tm-chip ext">AbstractList</span>
+          <span class="tm-chip imp">List</span>
+          <span class="tm-chip imp">RandomAccess</span>
+          <span class="tm-chip imp">Cloneable</span>
+          <span class="tm-chip imp">Serializable</span>
+        </div>
+        <div class="tm-note">DIRECT RELATIONS · 跨文件定位</div>
+      </div>
+      <div class="langs" data-at="2.7">
+        <span class="chip on">Java</span>
+        <span class="chip">JavaScript</span>
+        <span class="chip">TypeScript</span>
+        <span class="chip">Rust</span>
+        <span class="chip">C++</span>
+      </div>
+      <div class="rel-foot" data-at="2.8">DERIVED · IMPLEMENTERS</div>
+    </div>
+  </section>
+
+  <section class="scene" id="s8">
+    <div class="scene-head">
+      <div class="eyebrow" data-at=".2">DIFF · VERSIONS</div>
+      <h2 data-at=".4">对比版本，<span class="accent">逐行看懂</span></h2>
+    </div>
+    <div class="diff" data-at=".9" data-y="30">
+      <div class="diff-head"><span class="v">3.50.4</span><span>→</span><span class="v">3.54.1</span><span style="margin-left:auto">SQLITE · sqlite3.h</span></div>
+      <div class="diff-body">
+        <div class="diff-line"><span class="ln">36</span><span>typedef struct sqlite3 sqlite3;</span></div>
+        <div class="diff-line"><span class="ln">37</span><span>&nbsp;</span></div>
+        <div class="diff-line del" data-at="1.5"><span class="ln">38</span><span>- #define SQLITE_VERSION        "3.50.4"</span></div>
+        <div class="diff-line add" data-at="1.7"><span class="ln">38</span><span>+ #define SQLITE_VERSION        "3.54.1"</span></div>
+        <div class="diff-line"><span class="ln">39</span><span>#define SQLITE_VERSION_NUMBER 3054001</span></div>
+        <div class="diff-line"><span class="ln">40</span><span>&nbsp;</span></div>
+        <div class="diff-line"><span class="ln">41</span><span>#define SQLITE_THREADSAFE 1</span></div>
+        <div class="diff-line"><span class="ln">42</span><span>&nbsp;</span></div>
+      </div>
+    </div>
+    <div class="symbol-summary" data-at="2.2" data-y="24">
+      <div class="sum-head">符号级摘要 <span>SYMBOL SUMMARY</span></div>
+      <div class="sum-grid">
+        <div class="sum-item plus"><b>+</b><strong>新增符号</strong><small>方法 / 字段 / 类型</small></div>
+        <div class="sum-item minus"><b>−</b><strong>删除符号</strong><small>旧版本已不存在</small></div>
+        <div class="sum-item changed"><b>~</b><strong>修改签名</strong><small>参数或返回类型变化</small></div>
+      </div>
+    </div>
+    <div class="version-compare" data-at="2.9" data-y="20">
+      <div class="ver-box"><small>BEFORE</small><b>SQLite 3.50.4</b></div>
+      <span class="ver-arrow">→</span>
+      <div class="ver-box"><small>AFTER</small><b>SQLite 3.54.1</b></div>
+    </div>
+    <div class="ver-note" data-at="3.2">
+      <span>同一文件 · 逐行对比</span>
+      <span>CURRENT FILE ONLY</span>
+    </div>
+  </section>
+
+  <section class="scene" id="s9">
+    <div class="scene-head">
+      <div class="eyebrow" data-at=".2">TRANSLATE · LOCAL</div>
+      <h2 data-at=".4">本地翻译，<span class="accent">断网可用</span></h2>
+      <p class="sub" data-at=".8">选中注释，英语 → 简体中文，不经过云端。</p>
+    </div>
+    <div class="shot-frame trans-shot" data-at="1.1" data-y="28">
+      <img src="assets/translation.png" alt="Lattice 翻译面板">
+    </div>
+    <div class="trans-chips" data-at="2.0" data-y="18">
+      <span class="chip on">English → 简体中文</span>
+      <span class="chip">OPUS-MT · ONNX</span>
+      <span class="chip">独立 worker</span>
+      <span class="chip">可取消</span>
+    </div>
+    <div class="pipeline" data-at="2.6" data-y="20">
+      <div class="pipe-node"><b>lattice.exe</b><small>UI · 只读阅读</small></div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-node"><b>NDJSON</b><small>STDIN / STDOUT</small></div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-node on"><b>lattice-translator.exe</b><small>ONNX · OPUS-MT</small></div>
+    </div>
+  </section>
+
+  <section class="scene" id="s10">
+    <div class="s7-glow"></div>
+    <svg class="logo" data-at=".1" viewBox="0 0 60 68" fill="none">
+      <path d="M30 3 55 17.5v33L30 65 5 50.5v-33L30 3Z" stroke="#e86a58" stroke-width="2.2"/>
+      <path d="M30 3v29m0 0L5 17.5M30 32l25-14.5M30 32v33" stroke="#e86a58" stroke-width="1.3" opacity=".72"/>
+    </svg>
+    <div class="nm" data-at=".3">LATTICE</div>
+    <h1 data-at=".6">源码只读。<br><span class="accent">知识留下。</span></h1>
+    <div class="lead" data-at="1.2">完全离线 · 没有账号 · 没有云端</div>
+    <div class="stats" data-at="1.7">
+      <div class="stat"><b>10</b><span>SOURCE PACKS</span></div>
+      <div class="stat"><b>6</b><span>LANGUAGES</span></div>
+      <div class="stat"><b>0</b><span>NETWORK</span></div>
+    </div>
+    <div class="repo" data-at="2.3">github.com/cherishtong/lattice</div>
+    <div class="repo-foot" data-at="2.6">LATTICE 0.1.0 · WINDOWS X64 · 2026</div>
+  </section>
+</div>
+
+<script>
+const TIMELINE = [
+  { id: 's1', start: 0.0, end: 10.0 },
+  { id: 's2', start: 10.0, end: 22.5 },
+  { id: 's3', start: 22.5, end: 30.9 },
+  { id: 's4', start: 30.9, end: 39.9 },
+  { id: 's5', start: 39.9, end: 49.0 },
+  { id: 's6', start: 49.0, end: 57.2 },
+  { id: 's7', start: 57.2, end: 65.7 },
+  { id: 's8', start: 65.7, end: 72.9 },
+  { id: 's9', start: 72.9, end: 80.4 },
+  { id: 's10', start: 80.4, end: 86.6 },
+];
+
+const clamp = (v) => Math.min(1, Math.max(0, v));
+const ease = (v) => 1 - Math.pow(1 - v, 3);
+
+const scenes = TIMELINE.map((item) => {
+  const el = document.getElementById(item.id);
+  return { ...item, el, children: [...el.querySelectorAll('[data-at]')], edges: [...el.querySelectorAll('.edge')] };
+});
+for (const scene of scenes) {
+  for (const edge of scene.edges) edge.dataset.len = String(edge.getTotalLength());
+}
+
+function render(t) {
+  const glow = document.getElementById('drift-glow');
+  glow.style.left = `${-180 + Math.sin(t * .11) * 140}px`;
+  glow.style.top = `${-120 + Math.cos(t * .09) * 90}px`;
+
+  const mini = document.getElementById('minibrand');
+  mini.style.opacity = t > 10.1 && t < 80.4 ? String(clamp((t - 10.1) / .5) * clamp((80.4 - t) / .5)) : '0';
+
+  for (const scene of scenes) {
+    const duration = scene.end - scene.start;
+    const local = t - scene.start;
+    let opacity = 0;
+    if (local > -0.35 && local < duration + 0.35) {
+      opacity = clamp(local / 0.5) * clamp((duration - local) / 0.5);
+    }
+    scene.el.style.opacity = String(opacity);
+    scene.el.style.transform = `translateY(${(1 - clamp(local / 0.6)) * 18 - clamp((local - duration + 0.5) / 0.5) * 18}px)`;
+    scene.el.style.visibility = opacity <= 0.001 ? 'hidden' : 'visible';
+
+    for (const child of scene.children) {
+      const at = Number(child.dataset.at || 0);
+      const dur = Number(child.dataset.dur || 0.65);
+      const p = ease(clamp((local - at) / dur));
+      child.style.opacity = String(p);
+      const y = Number(child.dataset.y || 22) * (1 - p);
+      const x = Number(child.dataset.x || 0) * (1 - p);
+      const scale = child.dataset.scale ? String(0.94 + 0.06 * p) : '';
+      child.style.transform = `translate(${x}px, ${y}px)${scale ? ` scale(${scale})` : ''}`;
+    }
+
+    for (const edge of scene.edges) {
+      const at = Number(edge.dataset.at || 1.6);
+      const p = ease(clamp((local - at) / 1.1));
+      const len = Number(edge.dataset.len || 600);
+      edge.style.strokeDasharray = String(len);
+      edge.style.strokeDashoffset = String(len * (1 - p));
+      edge.style.opacity = String(p);
+    }
+
+    if (scene.id === 's2') {
+      const scan = scene.el.querySelector('.pack-scan');
+      const active = local > 2.2 && local < duration - 0.8;
+      scan.style.opacity = active ? '1' : '0';
+      const index = Math.floor((local - 2.2) / 0.52) % 10;
+      scan.style.transform = `translateY(${index * 108}px)`;
+    }
+    if (scene.id === 's5') {
+      const cards = scene.el.querySelectorAll('.theme-card');
+      const active = local > 1.0 && local < duration - 0.7;
+      const index = Math.floor((local - 1.0) / 0.55) % cards.length;
+      cards.forEach((card, cardIndex) => card.classList.toggle('scan', active && cardIndex === index));
+    }
+  }
+}
+
+window.renderPromoFrame = render;
+window.PROMO_DURATION = TIMELINE[TIMELINE.length - 1].end;
+const forcedTime = Number(new URLSearchParams(location.search).get('t'));
+render(Number.isFinite(forcedTime) && forcedTime >= 0 ? forcedTime : 0);
+</script>
+</body>
+</html>
