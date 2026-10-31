@@ -10,7 +10,7 @@
 | --- | ---: | --- |
 | `lattice.exe` | 19.1 MB | WebView2 主程序 |
 | `lattice-translator.exe` | 24.4 MB | ONNX Runtime + OPUS-MT worker |
-| `Lattice-0.1.0-windows-x64.zip` | 12.3 MB | 便携包（两个 EXE + 文档 + 许可证） |
+| `Lattice-0.1.0-windows-x64.zip` | 12.7 MB | 便携包（两个 EXE + 文档 + 许可证） |
 | `Lattice-0.1.0-Setup.exe` | 9.7 MB | per-user 安装器（LZMA2） |
 | `opus-mt-en-zh` 模型 | 116.8 MB | 单独下载，不进入安装包 |
 
@@ -24,9 +24,9 @@
 
 | 方案 | 应用 | 运行时 | 模型 | 源码包 |
 | --- | ---: | ---: | ---: | --- |
-| WebView2，系统已有运行时 | 12.3 MB ZIP | 0 | 116.8 MB（可选） | 按需 |
-| WebView2，完全离线 | 12.3 MB ZIP | 约 205 MB | 116.8 MB（可选） | 按需 |
-| 只装主程序，不翻译 | 12.3 MB ZIP | 0 | 0 | 按需 |
+| WebView2，系统已有运行时 | 12.7 MB ZIP | 0 | 116.8 MB（可选） | 按需 |
+| WebView2，完全离线 | 12.7 MB ZIP | 约 205 MB | 116.8 MB（可选） | 按需 |
+| 只装主程序，不翻译 | 12.7 MB ZIP | 0 | 0 | 按需 |
 
 ## 说明
 
