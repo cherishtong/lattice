@@ -1,0 +1,60 @@
+name: Bug report
+description: Something is broken in Lattice
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, private source, or personal paths. For security
+        issues use SECURITY.md instead.
+  - type: input
+    id: version
+    attributes:
+      label: Lattice version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Source Pack / library
+        - Reading / highlight / outline
+        - Search / definition / references
+        - Call chain / dependencies
+        - Type relations
+        - Diff
+        - Translation
+        - Installer / packaging
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: pack
+    attributes:
+      label: Source Pack and file
+      placeholder: "OpenJDK 27, java.util.ArrayList"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior / log
+      render: text
+  - type: input
+    id: os
+    attributes:
+      label: Windows version
+      placeholder: "Windows 11 24H2 x64"

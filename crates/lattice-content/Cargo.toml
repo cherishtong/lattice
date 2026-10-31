@@ -4,6 +4,8 @@ description = "Immutable local source packs for Lattice"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 crc32fast = "1"

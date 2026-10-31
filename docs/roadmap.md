@@ -14,7 +14,7 @@
 | P5 类型关系 | 继承、接口、Trait 实现、C++ 基类、跨文件派生/实现者 | 完成 |
 | P6 内容补齐 | Nginx 1.31.8、Spring Boot 4.1.2、Vue 3.5.44、React 19.3.1 源码包与回归 | 完成 |
 | P7 本地翻译 | OPUS-MT 英译中、独立 worker、取消与错误处理 | 完成，保持单模型 |
-| P8 发布工程 | 便携包、安装器、签名、CI、许可证清单 | 收尾 |
+| P8 发布工程 | 便携包、安装器、CI、许可证清单、校验和 | 完成（签名需证书） |
 
 ## 剩余功能
 
@@ -42,12 +42,12 @@
 
 ### P8 发布工程
 
-- [ ] Inno Setup 实际构建与安装/卸载测试
-- [ ] 代码签名
-- [ ] 便携包和安装器 SHA-256
-- [ ] GitHub Actions：fmt、clippy、test、release build、package
-- [ ] 第三方许可证汇总
-- [ ] 更新体积与安装文档
+- [x] Inno Setup 实际构建与安装/卸载测试（per-user 安装）
+- [x] 便携包和安装器 SHA-256
+- [x] GitHub Actions：fmt、clippy、test、release build、package
+- [x] 第三方许可证汇总
+- [x] 更新体积与安装文档
+- [ ] 代码签名：已接入可选 `LATTICE_SIGN_CERT_SHA1` 流程，公开发布默认未签名，需要 Windows 代码签名证书
 
 ## 明确移除
 

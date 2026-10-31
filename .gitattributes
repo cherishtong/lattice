@@ -2,3 +2,12 @@
 *.db binary
 *.db-wal binary
 *.db-shm binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.mp4 binary
+*.exe binary
+*.dll binary
+*.onnx binary
+*.postcard binary

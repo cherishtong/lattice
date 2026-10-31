@@ -1,5 +1,8 @@
 # Lattice
 
+[![CI](https://github.com/cherishtong/lattice/actions/workflows/ci.yml/badge.svg)](https://github.com/cherishtong/lattice/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2f6f4e)](LICENSE)
+
 **离线优先、只读、多语言的源码实现阅读平台。**
 
 Lattice 把 CPython、OpenJDK、Rust、TypeScript、SQLite、Nginx、Spring Boot、Vue、React 等真实实现整理成本地 Source Pack，用统一的文件树、符号搜索、定义跳转、引用、调用链、依赖图和版本 Diff 阅读源码。
@@ -73,6 +76,18 @@ powershell -ExecutionPolicy Bypass -File scripts/install-source-packs.ps1 -Pack 
 
 已存在同名目录时默认跳过；需要覆盖时加 `-Force`。
 
+## 安装
+
+从 GitHub Releases 下载：
+
+- `Lattice-<version>-windows-x64.zip`：便携版，解压即用
+- `Lattice-<version>-Setup.exe`：当前用户安装版，不需要管理员权限
+- 同名 `.sha256` 文件用于校验下载
+
+详细步骤、静默安装、升级和卸载见 [`docs/install.md`](docs/install.md)。
+
+安装包不包含源码包和翻译模型；Source Pack 按上面的脚本安装，模型单独获取。
+
 ## 构建
 
 要求：
@@ -136,22 +151,43 @@ powershell -ExecutionPolicy Bypass -File scripts/fetch-opus-mt-model.ps1
 ## 打包
 
 ```powershell
-# 便携 ZIP
+# 便携 ZIP + SHA-256
 powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1
 
 # 追加 Inno Setup 安装器
 powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1 -Installer
 ```
 
+输出在 `dist/`：版本化 ZIP、`Lattice-<version>-Setup.exe` 和对应 `.sha256`。安装器是 per-user 安装，默认目录 `%LOCALAPPDATA%\Programs\Lattice`。
+
+可选代码签名：设置 `LATTICE_SIGN_CERT_SHA1` 并提供 `signtool.exe`，打包脚本会签名两个 EXE 和安装器。
+
+## 贡献
+
+- 提交前运行 `cargo fmt`、`clippy`、`cargo test`。
+- 保持离线阅读的产品边界；不要加入笔记、指南、IDE 或模型市场。
+- Source Pack 必须固定上游版本并提供 manifest 和 checksum。
+- 详见 [`CONTRIBUTING.md`](CONTRIBUTING.md) 和 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)。
+- 安全漏洞请按 [`SECURITY.md`](SECURITY.md) 私下报告。
+
+## 许可证
+
+应用代码使用 MIT License，见 [`LICENSE`](LICENSE)。
+
+Source Pack、翻译模型、图标和运行时组件使用各自的许可证，汇总见
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md)。Source Pack 归档内保留上游许可证文件。
+
 ## 文档
 
 - [产品定义](docs/product.md)
 - [架构](docs/architecture.md)
 - [路线图](docs/roadmap.md)
+- [安装与升级](docs/install.md)
 - [Source Pack](docs/source-pack.md)
 - [本地翻译](docs/translation.md)
 - [主题](docs/themes.md)
 - [体积基线](docs/size-budget.md)
+- [变更日志](CHANGELOG.md)
 - [Native / Blitz（实验）](docs/native-renderer.md)
 
 ## 目录

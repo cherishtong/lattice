@@ -1,6 +1,6 @@
 # Windows 体积基线
 
-测量日期：2026-10-30
+测量日期：2026-10-31
 平台：Windows x64，`x86_64-pc-windows-msvc`  
 构建：`cargo build --release`
 
@@ -10,7 +10,8 @@
 | --- | ---: | --- |
 | `lattice.exe` | 19.1 MB | WebView2 主程序 |
 | `lattice-translator.exe` | 24.4 MB | ONNX Runtime + OPUS-MT worker |
-| `Lattice-0.1.0-windows-x64.zip` | 12.3 MB | 便携包（两个 EXE + 文档） |
+| `Lattice-0.1.0-windows-x64.zip` | 12.3 MB | 便携包（两个 EXE + 文档 + 许可证） |
+| `Lattice-0.1.0-Setup.exe` | 9.7 MB | per-user 安装器（LZMA2） |
 | `opus-mt-en-zh` 模型 | 116.8 MB | 单独下载，不进入安装包 |
 
 ## 运行依赖

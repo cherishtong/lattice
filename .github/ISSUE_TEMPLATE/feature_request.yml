@@ -1,0 +1,48 @@
+name: Feature request
+description: Propose a change within the product scope
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Lattice is intentionally limited to offline source reading, relations, and
+        local translation. Notes, guides, bookmarks, IDE features, model markets,
+        extra language pairs, and multi-file diff are out of scope.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What reading or navigation task is hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Source Pack / library
+        - Reading / highlight / outline
+        - Search / definition / references
+        - Call chain / dependencies
+        - Type relations
+        - Diff
+        - Translation
+        - Packaging
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This works offline and does not require a new service.
+          required: true
+        - label: This is not a note, guide, bookmark, IDE, or multi-file diff feature.
+          required: true

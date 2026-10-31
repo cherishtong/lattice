@@ -1,6 +1,7 @@
 /target
 /.tools
 /.content
+/.cargo/config.toml
 /dist
 **/dist
 **/.dioxus
