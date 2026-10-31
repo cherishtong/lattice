@@ -1,0 +1,35 @@
+{
+  "voice": "zh-CN-YunyangNeural",
+  "rate": "-2%",
+  "pitch": "-1Hz",
+  "outDir": "voice",
+  "segments": [
+    { "id": "01", "text": "Lattice，离线源码阅读器。把真实的语言实现和主流框架，整理成随时可以翻阅的本地源码包。" },
+    { "id": "02", "text": "十套固定版本的源码包：CPython、OpenJDK、Rust、TypeScript、SQLite，以及新增的 Nginx、Spring Boot、Vue 和 React。" },
+    { "id": "03", "text": "源码包支持目录和 ZIP 导入，校验和验证，多版本并存，随时切换或卸载。" },
+    { "id": "04", "text": "文件树、多标签、代码视图和关系面板，都在同一个窗口里，阅读不用来回切换工具。" },
+    { "id": "05", "text": "四套内置主题：无为的暗色与纸色，矩阵的暗色与浅色，界面、代码和图标一起切换。" },
+    { "id": "06", "text": "双击标识符跳转定义，查看语义引用和调用链，也可以反向追踪文件依赖。" },
+    { "id": "07", "text": "继承与实现关系跨文件汇总，直接基类、接口、Trait 和实现者，一次看清。" },
+    { "id": "08", "text": "同一实现的跨版本逐行对比，符号级摘要标出新增、删除和修改。" },
+    { "id": "09", "text": "选中注释，用本地 OPUS-MT 翻译成中文，独立 worker，断网也能用。" },
+    { "id": "10", "text": "源码只读，知识留下。Lattice，完全离线。" }
+  ],
+  "music": "music.wav",
+  "musicVolume": 0.55,
+  "voices": [
+    "voice/01.mp3",
+    "voice/02.mp3",
+    "voice/03.mp3",
+    "voice/04.mp3",
+    "voice/05.mp3",
+    "voice/06.mp3",
+    "voice/07.mp3",
+    "voice/08.mp3",
+    "voice/09.mp3",
+    "voice/10.mp3"
+  ],
+  "starts": [0.4, 10.4, 22.9, 31.3, 40.3, 49.4, 57.6, 66.1, 73.3, 80.8],
+  "duration": 86.6,
+  "out": "final-audio.wav"
+}
